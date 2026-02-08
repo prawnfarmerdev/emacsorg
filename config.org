@@ -1,0 +1,395 @@
+#+TITLE: Minimal Emacs Configuration
+#+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el
+
+* Package Setup
+#+begin_src emacs-lisp
+;; Package setup
+(require 'package)
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(package-initialize)
+
+;; Install packages if not already installed
+(dolist (package '(evil evil-collection consult vterm magit company undo-tree go-mode use-package))
+  (unless (package-installed-p package)
+    (package-refresh-contents)
+    (package-install package)))
+
+;; Enable use-package
+(eval-when-compile
+  (require 'use-package))
+#+end_src
+
+* UI Settings
+#+begin_src emacs-lisp
+;; Remove window decorations
+(menu-bar-mode -1)
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+
+;; Remove startup screen
+(setq inhibit-startup-screen t)
+
+;; Load theme
+(load-file (expand-file-name "config/theme.el" user-emacs-directory))
+
+;; Set font
+(set-face-attribute 'default nil :font "CaskaydiaCove Nerd Font" :height 250)
+#+end_src
+
+* Editor Settings
+#+begin_src emacs-lisp
+;; Relative line numbers for text files
+(add-hook 'text-mode-hook 'display-line-numbers-mode)
+(add-hook 'prog-mode-hook 'display-line-numbers-mode)
+(setq display-line-numbers-type 'relative)
+
+;; Delete selection mode
+(delete-selection-mode 1)
+
+;; Show matching parentheses
+(show-paren-mode 1)
+
+;; Highlight current line
+(global-hl-line-mode 1)
+
+;; Change where file backups are created (file~)
+(setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
+
+;; Change where auto-save files are created (#file#)
+(setq auto-save-file-name-transforms
+      '((".*" "~/.emacs.d/auto-saves/" t)))
+
+;; Create auto-saves directory if it doesn't exist
+(make-directory "~/.emacs.d/auto-saves/" t)
+
+;; Disable lock files (.#file)
+(setq create-lockfiles nil)
+
+
+;; Undo-tree history files
+(setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo-tree")))
+(make-directory "~/.emacs.d/undo-tree/" t)
+
+
+#+end_src
+
+
+
+* Completion
+#+begin_src emacs-lisp
+;; Set mini-buffer completion mode
+(fido-vertical-mode)
+
+;; Consult for enhanced search commands
+(require 'consult)
+
+;; Configure consult-find to show hidden files
+(setq consult-find-args "find . -not ( -path '*/.git/*' -prune )")
+
+;; Configure consult-ripgrep to search hidden files
+(setq consult-ripgrep-args "rg --null --line-buffered --color=never --max-columns=1000 --path-separator / --smart-case --no-heading --with-filename --line-number --search-zip --hidden --glob=!.git/")
+
+;; Keybindings for Telescope-like fuzzy finding (Alt-s prefix)
+(global-set-key (kbd "M-s f") 'consult-find)        ; Find files
+(global-set-key (kbd "M-s g") 'consult-ripgrep)     ; Ripgrep search
+(global-set-key (kbd "M-s b") 'consult-buffer)      ; Switch buffers
+(global-set-key (kbd "M-s l") 'consult-line)        ; Search in current buffer
+
+;; Make consult searches work in dired
+(with-eval-after-load 'dired
+  (define-key dired-mode-map (kbd "M-s f") 'consult-find)
+  (define-key dired-mode-map (kbd "M-s g") 'consult-ripgrep)
+  (define-key dired-mode-map (kbd "M-s l") 'consult-line))
+#+end_src
+
+* Dired
+#+begin_src emacs-lisp
+;; Sort directories first (requires GNU ls)
+(setq dired-listing-switches "-alh --group-directories-first")
+
+;; Enable dired-dwim-target (copy/move between two dired buffers)
+(setq dired-dwim-target t)
+#+end_src
+
+* Programming
+#+begin_src emacs-lisp
+;; Company mode for completion
+(require 'company)
+(add-hook 'after-init-hook 'global-company-mode)
+(setq company-idle-delay 0.1)
+(setq company-minimum-prefix-length 1)
+
+;; Eglot LSP setup
+(require 'eglot)
+
+;; Python - requires pyright or pylsp
+;; Install: sudo pacman -S python-lsp-server
+(add-hook 'python-mode-hook 'eglot-ensure)
+
+;; Go - requires gopls and go-mode
+;; Install: sudo pacman -S gopls
+(use-package go-mode
+  :ensure t
+  :mode "\\.go\\'"
+  :hook (go-mode . eglot-ensure))
+
+;; C/C++ - requires clangd
+;; Install: sudo pacman -S clang
+(add-hook 'c-mode-hook 'eglot-ensure)
+(add-hook 'c++-mode-hook 'eglot-ensure)
+
+;; Format on save (optional)
+;; (add-hook 'before-save-hook 'eglot-format-buffer)
+#+end_src
+
+* Org Mode
+#+begin_src emacs-lisp
+;; Org mode basic settings
+(setq org-startup-indented t)
+(setq org-hide-leading-stars t)
+
+;; Enable folding (TAB to toggle)
+(setq org-startup-folded 'content)
+
+;; Syntax highlighting in code blocks
+(setq org-src-fontify-natively t)
+(setq org-src-tab-acts-natively t)
+
+;; Enable Babel for code execution (REPL-like)
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((emacs-lisp . t)
+   (python . t)
+   (C . t)
+   (shell . t)))
+
+;; Don't ask for confirmation before executing code blocks
+(setq org-confirm-babel-evaluate nil)
+
+;; Better code block editing
+(setq org-edit-src-content-indentation 0)
+(setq org-src-preserve-indentation t)
+
+;; Keybindings for org-mode
+(with-eval-after-load 'org
+  (define-key org-mode-map (kbd "C-c C-c") 'org-ctrl-c-ctrl-c)  ; Execute code block
+  (define-key org-mode-map (kbd "C-c '") 'org-edit-special))    ; Edit code block in separate buffer
+#+end_src
+
+* Terminal
+#+begin_src emacs-lisp
+;; Eshell is built-in, no setup needed
+
+;; Vterm
+(require 'vterm)
+#+end_src
+
+* Version Control
+#+begin_src emacs-lisp
+;; Magit
+(require 'magit)
+(global-set-key (kbd "C-x g") 'magit-status)
+#+end_src
+
+* Custom Navigation Functions
+#+begin_src emacs-lisp
+;;==============================================================================
+;; DIRECTORY CANDIDATES HELPER
+;;==============================================================================
+(defvar my/directory-history nil
+  "History for directory selection.")
+
+(defvar my/base-directories '("~/projects" "~/.config" "~")
+  "Base directories to scan for projects.")
+
+(defun my/get-directory-candidates ()
+  "Get list of directories from common project locations.
+Caches results and filters out non-existent directories efficiently."
+  (let ((dirs '()))
+    (dolist (base-dir my/base-directories)
+      (let ((expanded (expand-file-name base-dir)))
+        (when (file-directory-p expanded)
+          ;; Add the base directory
+          (push expanded dirs)
+          ;; Add subdirectories in one pass
+          (when-let ((subdirs (directory-files expanded t directory-files-no-dot-files-regexp t)))
+            (dolist (subdir subdirs)
+              (when (file-directory-p subdir)
+                (push subdir dirs)))))))
+    (nreverse dirs)))
+
+;;==============================================================================
+;; CONSULT-BASED NAVIGATION FUNCTIONS
+;;==============================================================================
+;;;###autoload
+(defun my/consult-sessionizer ()
+  "Consult-based directory selection. Opens selected directory in dired."
+  (interactive)
+  (let ((candidates (my/get-directory-candidates)))
+    (if candidates
+        (when-let ((selected (consult--read candidates
+                                            :prompt "Select directory: "
+                                            :require-match t
+                                            :sort nil
+                                            :category 'file
+                                            :history 'my/directory-history)))
+          (dired selected)
+          (message "Opened: %s" selected))
+      (dired default-directory)
+      (message "No project directories found. Opened current directory."))))
+
+;;;###autoload
+(defun my/consult-project-dirs ()
+  "Consult-based directory selection from common project directories."
+  (interactive)
+  (when-let* ((candidates (my/get-directory-candidates))
+              (selected (consult--read candidates
+                                      :prompt "Select directory: "
+                                      :require-match t
+                                      :sort nil
+                                      :category 'file
+                                      :history 'my/directory-history)))
+    (dired selected)))
+
+;;==============================================================================
+;; PROJECT CREATION
+;;==============================================================================
+(defun my/git-init-and-commit (project-dir project-name)
+  "Initialize git repo and create initial commit in PROJECT-DIR for PROJECT-NAME."
+  (let ((default-directory project-dir))
+    (unless (zerop (call-process "git" nil nil nil "init" "-b" "main"))
+      (error "Failed to initialize git repository"))
+    
+    ;; Create README.md
+    (with-temp-file (expand-file-name "README.md" project-dir)
+      (insert (format "# %s\n\nProject description\n" project-name)))
+    
+    ;; Initial commit
+    (unless (zerop (call-process "git" nil nil nil "add" "README.md"))
+      (error "Failed to stage README.md"))
+    (unless (zerop (call-process "git" nil nil nil "commit" "-m" "initial commit"))
+      (error "Failed to create initial commit"))
+    (message "Git repository initialized with initial commit")))
+
+(defun my/create-github-repo (project-name visibility)
+  "Create GitHub repository for PROJECT-NAME with VISIBILITY."
+  (let ((command (format "gh repo create %s %s --source=. --remote=origin --push" 
+                         project-name visibility)))
+    (message "Creating GitHub repository...")
+    (if (zerop (call-process-shell-command command))
+        (progn
+          (message "GitHub repository created: %s" project-name)
+          (sleep-for 1))
+      (message "Warning: GitHub repository creation may have failed"))))
+
+;;;###autoload
+(defun my/create-new-project ()
+  "Create new project directory with git and optional GitHub setup.
+Prompts for project name, creates directory in ~/projects/, initializes git,
+and optionally creates GitHub repository using gh CLI."
+  (interactive)
+  (let* ((project-name (string-trim (read-string "Project name: ")))
+         (project-dir (expand-file-name project-name "~/projects"))
+         (gh-available (executable-find "gh"))
+         (create-github (and gh-available (y-or-n-p "Create GitHub repository? ")))
+         (visibility (when create-github
+                       (if (y-or-n-p "Public repository? ")
+                           "--public"
+                         "--private"))))
+    
+    ;; Validate
+    (when (string-empty-p project-name)
+      (user-error "Project name cannot be empty"))
+    
+    (when (file-exists-p project-dir)
+      (unless (y-or-n-p (format "Directory %s exists. Use it? " project-dir))
+        (user-error "Project directory already exists")))
+    
+    ;; Create project
+    (make-directory project-dir t)
+    (message "Created: %s" project-dir)
+    
+    ;; Initialize git if needed
+    (unless (file-exists-p (expand-file-name ".git" project-dir))
+      (my/git-init-and-commit project-dir project-name)
+      
+      ;; Create GitHub repo if requested
+      (when create-github
+        (my/create-github-repo project-name visibility)))
+    
+    ;; Open in dired
+    (dired project-dir)))
+
+;;==============================================================================
+;; GITHUB PR HELPER
+;;==============================================================================
+(defun my/get-git-info ()
+  "Get git remote URL and current branch. Returns (remote-url . branch) or nil."
+  (let ((default-directory (or default-directory
+                               (and buffer-file-name 
+                                    (file-name-directory buffer-file-name))
+                               "~/")))
+    (when (locate-dominating-file default-directory ".git")
+      (let ((remote (string-trim (shell-command-to-string "git config --get remote.origin.url")))
+            (branch (string-trim (shell-command-to-string "git rev-parse --abbrev-ref HEAD"))))
+        (when (and (not (string-empty-p remote))
+                   (not (string-empty-p branch)))
+          (cons remote branch))))))
+
+(defun my/convert-to-github-url (remote-url)
+  "Convert git REMOTE-URL to GitHub HTTPS URL."
+  (cond
+   ;; SSH format: git@github.com:user/repo.git or git@github.com:user/repo
+   ((string-match "^git@github\\.com:\\(.+?\\)\\(?:\\.git\\)?$" remote-url)
+    (concat "https://github.com/" (match-string 1 remote-url)))
+   ;; HTTPS format: https://github.com/user/repo.git
+   ((string-match "^https://github\\.com/\\(.+?\\)\\(?:\\.git\\)?$" remote-url)
+    (concat "https://github.com/" (match-string 1 remote-url)))
+   ;; Not a GitHub URL
+   ((not (string-match-p "github\\.com" remote-url))
+    (error "Not a GitHub repository: %s" remote-url))
+   (t remote-url)))
+
+;;;###autoload
+(defun my/open-github-pr ()
+  "Open GitHub compare page for current branch in browser."
+  (interactive)
+  (if-let* ((git-info (my/get-git-info))
+            (remote-url (car git-info))
+            (branch (cdr git-info))
+            (github-url (my/convert-to-github-url remote-url))
+            (compare-url (concat github-url "/compare/" branch)))
+      (progn
+        (browse-url compare-url)
+        (message "Opening: %s" compare-url))
+    (user-error "Not in a git repository or missing remote/branch")))
+
+;;==============================================================================
+;; KEYBINDINGS
+;;==============================================================================
+(global-set-key (kbd "C-S-f") 'my/consult-sessionizer)
+(global-set-key (kbd "C-S-n") 'my/create-new-project)
+(global-set-key (kbd "C-S-p") 'my/open-github-pr)
+#+end_src
+
+* Evil Mode
+#+begin_src emacs-lisp
+;; Setup undo-tree BEFORE evil-mode
+(require 'undo-tree)
+(global-undo-tree-mode)
+
+;; Tell evil to use undo-tree
+(setq evil-undo-system 'undo-tree)
+
+;; Evil collection must be set up before evil-mode is enabled
+(setq evil-want-integration t)
+(setq evil-want-keybinding nil)
+
+;; Evil mode
+(require 'evil)
+(evil-mode 1)
+
+;; Evil collection for better vim bindings everywhere
+(require 'evil-collection)
+(evil-collection-init)
+#+end_src
