@@ -132,11 +132,37 @@ npm install -g @ansible/ansible-language-server  # if you use Ansible
 (global-set-key (kbd "M-s b") 'consult-buffer)      ; Switch buffers
 (global-set-key (kbd "M-s l") 'consult-line)        ; Search in current buffer
 
-;; Make consult searches work in dired
+;; Make consult searches work in dired with M‑S‑s prefix (Shift+Alt+s)
+(defun my/dired-setup-shift-consult-keys ()
+  "Set up consult keybindings for dired mode using M‑S‑s prefix.
+Binds M‑S‑s f/g/b/l to consult commands, preserving dired’s M‑s sorting keys."
+  ;; Set bindings in dired‑mode‑map for non‑evil usage
+  (define-key dired-mode-map (kbd "M-S-s f") 'consult-find)
+  (define-key dired-mode-map (kbd "M-S-s g") 'consult-ripgrep)
+  (define-key dired-mode-map (kbd "M-S-s b") 'consult-buffer)
+  (define-key dired-mode-map (kbd "M-S-s l") 'consult-line)
+  
+  ;; Also bind in evil states (for evil‑collection users)
+  (when (featurep 'evil)
+    (dolist (state '(normal visual motion insert))
+      (evil-define-key state dired-mode-map
+        (kbd "M-S-s f") 'consult-find
+        (kbd "M-S-s g") 'consult-ripgrep
+        (kbd "M-S-s b") 'consult-buffer
+        (kbd "M-S-s l") 'consult-line))))
+
+;; Apply keybindings when dired loads
 (with-eval-after-load 'dired
-  (define-key dired-mode-map (kbd "M-s f") 'consult-find)
-  (define-key dired-mode-map (kbd "M-s g") 'consult-ripgrep)
-  (define-key dired-mode-map (kbd "M-s l") 'consult-line))
+  (my/dired-setup-shift-consult-keys)
+  
+  ;; Re‑apply after evil‑collection loads (if it overrides bindings)
+  (with-eval-after-load 'evil-collection
+    (my/dired-setup-shift-consult-keys))
+  
+  ;; Final safety: apply to each dired buffer
+  (add-hook 'dired-mode-hook #'my/dired-setup-shift-consult-keys t)
+  
+  (message "Shift consult keybindings configured for dired"))
 #+end_src
 
 * Dired
