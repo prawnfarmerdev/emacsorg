@@ -1,5 +1,46 @@
-#+TITLE: Minimal Emacs Configuration
+#+TITLE: PrawnFarmerDev Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el
+
+* System Requirements
+Before using this configuration, install the following packages on your Arch system:
+
+** Core tools
+#+begin_src bash :tangle no
+# Package manager and Git
+sudo pacman -S git ripgrep
+
+# Language servers
+sudo pacman -S python-lsp-server gopls clang typescript-language-server
+
+# Tree-sitter grammars (optional, will auto-install from Emacs)
+# If on Emacs 29+, tree-sitter support is built-in
+#+end_src
+
+** AUR packages (using yay or paru)
+#+begin_src bash :tangle no
+# JSON language server
+yay -S vscode-json-languageserver
+
+# YAML language server
+yay -S yaml-language-server-bin
+
+# Terraform language server
+yay -S terraform-ls
+
+# Dockerfile language server
+yay -S dockerfile-language-server-bin
+
+# GitHub CLI (optional, for project creation)
+yay -S github-cli
+#+end_src
+
+** Alternative installation via npm
+#+begin_src bash :tangle no
+# If you prefer npm installation:
+npm install -g vscode-langservers-extracted  # includes json-languageserver
+npm install -g yaml-language-server
+npm install -g @ansible/ansible-language-server  # if you use Ansible
+#+end_src
 
 * Package Setup
 #+begin_src emacs-lisp
@@ -9,7 +50,8 @@
 (package-initialize)
 
 ;; Install packages if not already installed
-(dolist (package '(evil evil-collection consult vterm magit company undo-tree go-mode use-package))
+(dolist (package '(evil evil-collection consult vterm magit company undo-tree go-mode use-package
+                   yaml-mode json-mode terraform-mode dockerfile-mode typescript-mode))
   (unless (package-installed-p package)
     (package-refresh-contents)
     (package-install package)))
@@ -33,7 +75,7 @@
 (load-file (expand-file-name "config/theme.el" user-emacs-directory))
 
 ;; Set font
-(set-face-attribute 'default nil :font "CaskaydiaCove Nerd Font" :height 250)
+(set-face-attribute 'default nil :font "CaskaydiaMono Nerd Font" :height 200)
 #+end_src
 
 * Editor Settings
@@ -65,15 +107,10 @@
 ;; Disable lock files (.#file)
 (setq create-lockfiles nil)
 
-
 ;; Undo-tree history files
 (setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo-tree")))
 (make-directory "~/.emacs.d/undo-tree/" t)
-
-
 #+end_src
-
-
 
 * Completion
 #+begin_src emacs-lisp
@@ -111,6 +148,47 @@
 (setq dired-dwim-target t)
 #+end_src
 
+* Tree-sitter
+#+begin_src emacs-lisp
+;; Tree-sitter support (built-in for Emacs 29+)
+(when (and (fboundp 'treesit-available-p)
+           (treesit-available-p))
+  
+  ;; Set up tree-sitter grammar sources
+  (setq treesit-language-source-alist
+        '((bash "https://github.com/tree-sitter/tree-sitter-bash")
+          (c "https://github.com/tree-sitter/tree-sitter-c")
+          (cpp "https://github.com/tree-sitter/tree-sitter-cpp")
+          (css "https://github.com/tree-sitter/tree-sitter-css")
+          (go "https://github.com/tree-sitter/tree-sitter-go")
+          (html "https://github.com/tree-sitter/tree-sitter-html")
+          (javascript "https://github.com/tree-sitter/tree-sitter-javascript")
+          (json "https://github.com/tree-sitter/tree-sitter-json")
+          (python "https://github.com/tree-sitter/tree-sitter-python")
+          (tsx "https://github.com/tree-sitter/tree-sitter-typescript" "master" "tsx/src")
+          (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
+          (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
+  
+  ;; Auto-install grammars on first use
+  (dolist (lang treesit-language-source-alist)
+    (unless (treesit-language-available-p (car lang))
+      (message "Installing tree-sitter grammar for %s..." (car lang))
+      (treesit-install-language-grammar (car lang))))
+  
+  ;; Use tree-sitter modes when available
+  (setq major-mode-remap-alist
+        '((python-mode . python-ts-mode)
+          (javascript-mode . js-ts-mode)
+          (js-json-mode . json-ts-mode)
+          (css-mode . css-ts-mode)
+          (bash-mode . bash-ts-mode)
+          (c-mode . c-ts-mode)
+          (c++-mode . c++-ts-mode)
+          (go-mode . go-ts-mode)))
+  
+  (message "Tree-sitter enabled"))
+#+end_src
+
 * Programming
 #+begin_src emacs-lisp
 ;; Company mode for completion
@@ -122,21 +200,94 @@
 ;; Eglot LSP setup
 (require 'eglot)
 
+;; Eglot keybindings
+(with-eval-after-load 'eglot
+  (define-key eglot-mode-map (kbd "C-c l a") 'eglot-code-actions)
+  (define-key eglot-mode-map (kbd "C-c l r") 'eglot-rename)
+  (define-key eglot-mode-map (kbd "C-c l f") 'eglot-format)
+  (define-key eglot-mode-map (kbd "C-c l d") 'eglot-find-declaration)
+  (define-key eglot-mode-map (kbd "C-c l i") 'eglot-find-implementation)
+  (define-key eglot-mode-map (kbd "C-c l t") 'eglot-find-typeDefinition)
+  (define-key eglot-mode-map (kbd "C-c l h") 'eldoc-doc-buffer)
+  (define-key eglot-mode-map (kbd "C-c l s") 'eglot-reconnect))
+
 ;; Python - requires pyright or pylsp
 ;; Install: sudo pacman -S python-lsp-server
 (add-hook 'python-mode-hook 'eglot-ensure)
+(add-hook 'python-ts-mode-hook 'eglot-ensure)
 
-;; Go - requires gopls and go-mode
+;; Go - requires gopls
 ;; Install: sudo pacman -S gopls
 (use-package go-mode
   :ensure t
   :mode "\\.go\\'"
   :hook (go-mode . eglot-ensure))
+(add-hook 'go-ts-mode-hook 'eglot-ensure)
 
 ;; C/C++ - requires clangd
 ;; Install: sudo pacman -S clang
 (add-hook 'c-mode-hook 'eglot-ensure)
 (add-hook 'c++-mode-hook 'eglot-ensure)
+(add-hook 'c-ts-mode-hook 'eglot-ensure)
+(add-hook 'c++-ts-mode-hook 'eglot-ensure)
+
+;; JavaScript/TypeScript - requires typescript-language-server
+;; Install: sudo pacman -S typescript-language-server
+(use-package typescript-mode
+  :ensure t
+  :mode (("\\.ts\\'" . typescript-mode)
+         ("\\.tsx\\'" . tsx-ts-mode))
+  :hook ((typescript-mode . eglot-ensure)
+         (tsx-ts-mode . eglot-ensure)))
+
+(add-hook 'js-mode-hook 'eglot-ensure)
+(add-hook 'js-ts-mode-hook 'eglot-ensure)
+(add-hook 'typescript-ts-mode-hook 'eglot-ensure)
+
+;; Configure eglot for JavaScript/TypeScript
+(with-eval-after-load 'eglot
+  (add-to-list 'eglot-server-programs
+               '((js-mode js-ts-mode typescript-mode typescript-ts-mode tsx-ts-mode)
+                 . ("typescript-language-server" "--stdio"))))
+
+;; JSON - requires vscode-json-languageserver
+;; Install: yay -S vscode-json-languageserver
+(use-package json-mode
+  :ensure t
+  :mode "\\.json\\'"
+  :hook (json-mode . eglot-ensure))
+(add-hook 'json-ts-mode-hook 'eglot-ensure)
+
+;; YAML - requires yaml-language-server
+;; Install: yay -S yaml-language-server-bin
+(use-package yaml-mode
+  :ensure t
+  :mode ("\\.ya?ml\\'" . yaml-mode)
+  :hook (yaml-mode . eglot-ensure))
+
+;; Terraform - requires terraform-ls
+;; Install: yay -S terraform-ls
+(use-package terraform-mode
+  :ensure t
+  :mode "\\.tf\\'"
+  :hook (terraform-mode . eglot-ensure))
+
+;; Dockerfile - requires dockerfile-language-server
+;; Install: yay -S dockerfile-language-server-bin
+(use-package dockerfile-mode
+  :ensure t
+  :mode "Dockerfile\\'"
+  :hook (dockerfile-mode . eglot-ensure))
+
+;; Kubernetes YAML files (use yaml-mode with k8s detection)
+(add-to-list 'auto-mode-alist '("\\.k8s\\.ya?ml\\'" . yaml-mode))
+(add-to-list 'auto-mode-alist '("k8s/.*\\.ya?ml\\'" . yaml-mode))
+
+;; Helm charts (also yaml)
+(add-to-list 'auto-mode-alist '("Chart\\.yaml\\'" . yaml-mode))
+(add-to-list 'auto-mode-alist '("values\\.yaml\\'" . yaml-mode))
+(add-to-list 'auto-mode-alist '("templates/.*\\.yaml\\'" . yaml-mode))
+(add-to-list 'auto-mode-alist '("templates/.*\\.tpl\\'" . yaml-mode))
 
 ;; Format on save (optional)
 ;; (add-hook 'before-save-hook 'eglot-format-buffer)
@@ -161,7 +312,8 @@
  '((emacs-lisp . t)
    (python . t)
    (C . t)
-   (shell . t)))
+   (shell . t)
+   (js . t)))
 
 ;; Don't ask for confirmation before executing code blocks
 (setq org-confirm-babel-evaluate nil)
@@ -170,12 +322,35 @@
 (setq org-edit-src-content-indentation 0)
 (setq org-src-preserve-indentation t)
 
+;; Make org-src windows use the same window (easier for LSP)
+(setq org-src-window-setup 'current-window)
+
+;; Enable eglot in org-src edit buffers (C-c ')
+(require 'eglot)
+(defun my/org-babel-edit-prep (info)
+  "Enable eglot in org src blocks by setting buffer-file-name."
+  (setq buffer-file-name (or (alist-get :file (caddr info))
+                             "org-src-babel-tmp"))
+  (eglot-ensure))
+
+(advice-add 'org-edit-src-code
+            :before (defun my/org-edit-src-code-advice (&rest args)
+                      (when-let* ((element (org-element-at-point))
+                                  (type (org-element-type element))
+                                  (lang (org-element-property :language element))
+                                  (mode (org-src-get-lang-mode lang))
+                                  ((eglot--lookup-mode mode))
+                                  (edit-prep (intern
+                                              (format "org-babel-edit-prep:%s" lang))))
+                        (if (fboundp edit-prep)
+                            (advice-add edit-prep :after #'my/org-babel-edit-prep)
+                          (fset edit-prep #'my/org-babel-edit-prep)))))
+
 ;; Keybindings for org-mode
 (with-eval-after-load 'org
   (define-key org-mode-map (kbd "C-c C-c") 'org-ctrl-c-ctrl-c)  ; Execute code block
   (define-key org-mode-map (kbd "C-c '") 'org-edit-special))    ; Edit code block in separate buffer
 #+end_src
-
 * Terminal
 #+begin_src emacs-lisp
 ;; Eshell is built-in, no setup needed
