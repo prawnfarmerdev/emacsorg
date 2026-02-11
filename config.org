@@ -74,6 +74,12 @@ npm install -g yaml-language-server
 npm install -g @ansible/ansible-language-server  # if you use Ansible
 #+end_src
 
+** Python debugger
+#+begin_src bash :tangle no
+# For Python debugging with dape
+pip install debugpy
+#+end_src
+
 * Package Setup
 #+begin_src emacs-lisp
 ;; Package setup
@@ -484,18 +490,17 @@ npm install -g @ansible/ansible-language-server  # if you use Ansible
 #+begin_src emacs-lisp
 (use-package dape
   :config
-  ;; Save buffers on startup, useful for interpreted languages
+  ;; Save buffers on startup
   (add-hook 'dape-on-start-hooks (lambda () (save-some-buffers t t)))
   
   ;; Kill compile buffer on build success
-  (add-hook 'dape-compile-hook 'kill-buffer)
+  (add-hook 'dape-compile-compile-hook 'kill-buffer)
   
-  ;; Use default directory as working directory (can customize later)
-  ;; If you install projectile, you can use: (setq dape-cwd-fn 'projectile-project-root)
-  (setq dape-cwd-fn 'dape-cwd-default)
+  ;; Use project root as working directory
+  (setq dape-cwd-fn 'dape--default-cwd)
   
-  :bind (;; Global bindings
-         ("C-c d d" . dape)
+  ;; Global debugging keybindings
+  :bind (("C-c d d" . dape)
          ("C-c d p" . dape-pause)
          ("C-c d c" . dape-continue)
          ("C-c d n" . dape-next)
@@ -511,50 +516,67 @@ npm install -g @ansible/ansible-language-server  # if you use Ansible
          ("C-c d i" . dape-info)
          ("C-c d R" . dape-repl)))
 
-;; Example dape configurations for common languages:
-;; Uncomment and customize as needed
-
-;; Python (debugpy)
-;; Install: pip install debugpy
-;; (with-eval-after-load 'dape
-;;   (add-to-list 'dape-configs
-;;                `(debugpy-launch
-;;                  modes (python-mode python-ts-mode)
-;;                  command "python"
-;;                  command-args ("-m" "debugpy.adapter")
-;;                  command-cwd dape-cwd-fn
-;;                  :type "executable"
-;;                  :request "launch"
-;;                  :cwd dape-cwd-fn
-;;                  :program dape-buffer-default)))
-
-;; Go (delve)
-;; Install: go install github.com/go-delve/delve/cmd/dlv@latest
-;; (with-eval-after-load 'dape
-;;   (add-to-list 'dape-configs
-;;                `(delve
-;;                  modes (go-mode go-ts-mode)
-;;                  command "dlv"
-;;                  command-args ("dap" "--listen" "127.0.0.1:55878")
-;;                  command-cwd dape-cwd-fn
-;;                  port 55878
-;;                  :type "debug"
-;;                  :request "launch"
-;;                  :mode "debug"
-;;                  :program dape-cwd-fn)))
-
-;; C/C++ (gdb)
-;; (with-eval-after-load 'dape
-;;   (add-to-list 'dape-configs
-;;                `(gdb
-;;                  modes (c-mode c++-mode c-ts-mode c++-ts-mode)
-;;                  command "gdb"
-;;                  command-args ("-i" "dap")
-;;                  command-cwd dape-cwd-fn
-;;                  :type "executable"
-;;                  :request "launch"
-;;                  :cwd dape-cwd-fn
-;;                  :program dape-buffer-default)))
+;; Dape configurations for different languages
+(with-eval-after-load 'dape
+  ;; Python (debugpy) - install with: pip install debugpy
+  (add-to-list 'dape-configs
+               `(debugpy
+                 modes (python-mode python-ts-mode)
+                 command "python"
+                 command-args ("-m" "debugpy.adapter")
+                 :request "launch"
+                 :type "executable"
+                 :cwd dape-cwd-fn
+                 :program dape-buffer-default))
+  
+  ;; Go (delve) - install with: go install github.com/go-delve/delve/cmd/dlv@latest
+  (add-to-list 'dape-configs
+               `(delve
+                 modes (go-mode go-ts-mode)
+                 command "dlv"
+                 command-args ("dap" "--listen" "127.0.0.1:55878")
+                 command-cwd dape-cwd-fn
+                 port 55878
+                 :request "launch"
+                 :type "debug"
+                 :mode "debug"
+                 :program dape-cwd-fn))
+  
+  ;; C/C++ (gdb)
+  (add-to-list 'dape-configs
+               `(gdb
+                 modes (c-mode c++-mode c-ts-mode c++-ts-mode)
+                 command "gdb"
+                 command-args ("-i" "dap")
+                 command-cwd dape-cwd-fn
+                 :request "launch"
+                 :type "executable"
+                 :cwd dape-cwd-fn
+                 :program dape-buffer-default))
+  
+  ;; C/C++ (lldb) - alternative to gdb
+  (add-to-list 'dape-configs
+               `(lldb
+                 modes (c-mode c++-mode c-ts-mode c++-ts-mode)
+                 command "lldb-vscode"
+                 command-args ()
+                 command-cwd dape-cwd-fn
+                 :request "launch"
+                 :type "lldb"
+                 :cwd dape-cwd-fn
+                 :program dape-buffer-default))
+  
+  ;; Node.js (for JavaScript/TypeScript debugging)
+  (add-to-list 'dape-configs
+               `(node
+                 modes (js-mode js-ts-mode typescript-mode typescript-ts-mode)
+                 command "node"
+                 command-args ("--inspect-brk" dape-buffer-default)
+                 command-cwd dape-cwd-fn
+                 :request "launch"
+                 :type "node"
+                 :cwd dape-cwd-fn
+                 :program dape-buffer-default)))
 #+end_src
 
 * Org Mode
@@ -611,6 +633,53 @@ npm install -g @ansible/ansible-language-server  # if you use Ansible
 (with-eval-after-load 'org
   (define-key org-mode-map (kbd "C-c C-c") 'org-ctrl-c-ctrl-c)
   (define-key org-mode-map (kbd "C-c '") 'org-edit-special))
+
+;; Org-modern for beautiful org-mode appearance
+(use-package org-modern
+  :hook ((org-mode . org-modern-mode)
+         (org-agenda-finalize . org-modern-agenda))
+  :custom
+  ;; Modern styling
+  (org-modern-star '("●" "○" "✸" "✿"))
+  (org-modern-table nil)  ; Set to t if you want modern table styling
+  (org-modern-hide-stars nil)  ; Show decorative stars
+  (org-modern-block-fringe nil)
+  
+  ;; Checkbox styling
+  (org-modern-checkbox
+   '((?X . "☑")
+     (?- . "⊟")
+     (?\s . "☐")))
+  
+  ;; Tag styling
+  (org-modern-tag t)
+  (org-modern-priority t)
+  
+  ;; Keyword styling
+  (org-modern-keyword t)
+  (org-modern-timestamp t)
+  (org-modern-statistics t)
+  
+  ;; Block styling
+  (org-modern-block-name t)
+  
+  ;; List styling  
+  (org-modern-list
+   '((?+ . "◦")
+     (?- . "–")
+     (?* . "•"))))
+
+;; Additional visual improvements for org-mode
+(with-eval-after-load 'org
+  ;; Better heading sizes
+  (custom-set-faces
+   '(org-level-1 ((t (:height 1.3 :weight bold))))
+   '(org-level-2 ((t (:height 1.2 :weight semi-bold))))
+   '(org-level-3 ((t (:height 1.1 :weight semi-bold))))
+   '(org-document-title ((t (:height 1.5 :weight bold)))))
+  
+  ;; Better spacing
+  (setq org-cycle-separator-lines 2))
 #+end_src
 
 * Terminal
@@ -620,6 +689,16 @@ npm install -g @ansible/ansible-language-server  # if you use Ansible
   :config
   (setq vterm-always-compile-module t)
   (setq vterm-max-scrollback 10000))
+#+end_src
+
+* Visual Enhancements
+#+begin_src emacs-lisp
+;; Rainbow delimiters - colorful parentheses
+(use-package rainbow-delimiters
+  :hook ((prog-mode . rainbow-delimiters-mode)
+         (emacs-lisp-mode . rainbow-delimiters-mode)
+         (lisp-mode . rainbow-delimiters-mode)
+         (scheme-mode . rainbow-delimiters-mode)))
 #+end_src
 
 * Version Control
