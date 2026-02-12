@@ -356,9 +356,7 @@ pip install debugpy
   (add-to-list 'completion-at-point-functions #'cape-elisp-block)
   :config
   ;; Silence the pcomplete capf, no errors or messages!
-  (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-silent)
-  ;; Ensure that pcomplete does not write to the buffer
-  (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-purify))
+  (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-silent))
 #+end_src
 
 * Dired
