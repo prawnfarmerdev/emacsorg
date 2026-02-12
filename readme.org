@@ -1,8 +1,7 @@
 #+TITLE: PrawnFarmerDev Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el
 
-* Early Init (Performance & Warning Suppression)
-This section creates an early-init.el file for startup optimizations and warning suppression.
+* Early Init (Performance & Warning Suppression) This section creates an early-init.el file for startup optimizations and warning suppression.
 
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
 ;; early-init.el --- Early initialization -*- lexical-binding: t -*-
@@ -64,6 +63,7 @@ yay -S dockerfile-language-server-bin
 
 # GitHub CLI (optional, for project creation)
 yay -S github-cli
+
 #+end_src
 
 ** Alternative installation via npm
@@ -114,7 +114,7 @@ pip install debugpy
 (load-file (expand-file-name "config/theme.el" user-emacs-directory))
 
 ;; Set font
-(set-face-attribute 'default nil :font "CaskaydiaMono Nerd Font" :height 150)
+(set-face-attribute 'default nil :font "CaskaydiaMono Nerd Font" :height 180)
 #+end_src
 
 * Editor Settings
