@@ -119,6 +119,9 @@ pip install debugpy
 
 * Editor Settings
 #+begin_src emacs-lisp
+;;Turn off beep
+(setq ring-bell-function 'ignore)
+
 ;; Relative line numbers for text files
 (add-hook 'text-mode-hook 'display-line-numbers-mode)
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
@@ -197,6 +200,19 @@ pip install debugpy
   (when (fboundp 'vertico-directory-mode)
     (vertico-directory-mode 1)))
 
+;; Minibuffer backward kill - delete up to / in file paths
+(defun dw/minibuffer-backward-kill (arg)
+  "When minibuffer is completing a file name delete up to parent folder,
+   otherwise delete a character backward"
+  (interactive "p")
+  (if minibuffer-completing-file-name
+      (if (string-match-p "/." (minibuffer-contents))
+          (zap-up-to-char (- arg) ?/)
+        (delete-minibuffer-contents))
+    (delete-backward-char arg)))
+
+(define-key minibuffer-local-map (kbd "DEL") #'dw/minibuffer-backward-kill)
+
 ;; Persist history over Emacs restarts
 (use-package savehist
   :init
@@ -204,6 +220,7 @@ pip install debugpy
 
 ;; Disable icomplete-mode (conflicts with vertico)
 (icomplete-mode -1)
+
 #+end_src
 
 ** Orderless - Flexible completion style
