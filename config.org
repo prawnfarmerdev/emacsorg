@@ -683,12 +683,42 @@ pip install debugpy
 * Terminal
 #+begin_src emacs-lisp
 ;; Vterm - best terminal emulator for Emacs
+;; Vterm - best terminal emulator for Emacs
 (use-package vterm
   :config
   (setq vterm-always-compile-module t)
-  (setq vterm-max-scrollback 10000))
-#+end_src
-
+  (setq vterm-max-scrollback 10000)
+  
+  ;; Disable Evil mode in vterm
+  (evil-set-initial-state 'vterm-mode 'emacs)
+  
+  ;; Fix colors - use faces that match your theme
+  (setq vterm-term-environment-variable "xterm-256color")
+  
+  ;; Set vterm colors to match your Menudo theme
+  (defun my/vterm-setup-colors ()
+    "Set vterm colors to match Menudo theme."
+    (setq vterm-color-black "#000000"
+          vterm-color-red "#dc322f"
+          vterm-color-green "#66bc11"
+          vterm-color-yellow "#b58900"
+          vterm-color-blue "#268bd2"
+          vterm-color-magenta "#af87d7"
+          vterm-color-cyan "#5fafaf"
+          vterm-color-white "#cccccc"
+          ;; Bright colors
+          vterm-color-bright-black "#666666"
+          vterm-color-bright-red "#dc7575"
+          vterm-color-bright-green "#66bc11"
+          vterm-color-bright-yellow "#f0bb0c"
+          vterm-color-bright-blue "#268bd2"
+          vterm-color-bright-magenta "#af87d7"
+          vterm-color-bright-cyan "#5fafaf"
+          vterm-color-bright-white "#cccccc"))
+  
+  (add-hook 'vterm-mode-hook #'my/vterm-setup-colors))
+  #+end_src
+  
 * Visual Enhancements
 #+begin_src emacs-lisp
 ;; Rainbow delimiters - colorful parentheses

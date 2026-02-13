@@ -36,7 +36,8 @@
        (fresh-green        "#66bc11")
        (lime-green         "#003939")
        (vivid-vermilion    "#f0500c")
-       (golden-yellow      "#f0bb0c")
+        (golden-yellow      "#f0bb0c")
+        (solarized-yellow   "#b58900")
        (pure-black         "#000000")
        (dusty-sage         "#9ba290")
        (coffee-brown       "#63523d")
@@ -67,7 +68,7 @@
    ;;==========================================================================
    ;; LINE NUMBERS
    ;;==========================================================================
-   `(line-number              ((t (:foreground ,medium-gray :background ,pure-black))))
+    `(line-number              ((t (:foreground ,solarized-yellow :background ,pure-black))))
    `(line-number-current-line ((t (:background ,pure-black :foreground ,almost-white))))
 
    ;;==========================================================================
