@@ -187,60 +187,48 @@ pip install debugpy
 * Completion Framework
 ** Vertico - Vertical completion UI
 #+begin_src emacs-lisp
-;; Minibuffer completion with Vertico
-;; Reverse layout (prompt bottom), indexed candidates, auto-sizing
-
-(defun dw/minibuffer-backward-kill (arg)
-  "Delete to parent directory in file paths, else delete backward."
-  (interactive "p")
+(defun dw/minibuffer-backward-kill ()
+  "Delete to parent dir in file paths, else delete backward char."
+  (interactive)
   (if minibuffer-completing-file-name
       (if (string-match-p "/." (minibuffer-contents))
-          (zap-up-to-char (- arg) ?/)
+          (zap-up-to-char -1 ?/)
         (delete-minibuffer-contents))
-    (delete-backward-char arg)))
+    (delete-backward-char 1)))
 
 (use-package vertico
   :ensure t
-  :demand t
   :init
-  ;; Completion behavior
   (setq completion-styles '(basic substring partial-completion flex)
         completion-ignore-case t
         read-file-name-completion-ignore-case t
         read-buffer-completion-ignore-case t
         enable-recursive-minibuffers t)
   
-  ;; Vertico settings
   (setq vertico-cycle t
-        vertico-count 10        ; Max candidates to show
-        vertico-resize t)       ; Auto-resize to fit actual count
+        vertico-count 10
+        vertico-resize t)
   
   :config
-  (vertico-mode 1)
-  (vertico-indexed-mode 1)
-  (vertico-reverse-mode 1)
-  
-  ;; Directory navigation extension
-  (with-eval-after-load 'vertico
-    (require 'vertico-directory))
+  (vertico-mode)
+  (vertico-indexed-mode)
+  (vertico-reverse-mode)
   
   :bind (:map vertico-map
-         ("DEL"   . dw/minibuffer-backward-kill)
-         ("RET"   . vertico-directory-enter)
-         ("M-DEL" . vertico-directory-delete-word))
+         ("M-DEL"         . dw/minibuffer-backward-kill)
+         ("RET"           . vertico-directory-enter))
   
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 
 (use-package savehist
-  :ensure t
-  :demand t
-  :config
+  :init
   (setq savehist-file (locate-user-emacs-file "savehist")
         savehist-additional-variables '(search-ring regexp-search-ring))
-  (savehist-mode 1))
+  :config
+  (savehist-mode))
 
-;; Cleanup
 (icomplete-mode -1)
+
 #+end_src
 
 ** Orderless - Flexible completion style
