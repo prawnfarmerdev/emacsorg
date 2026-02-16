@@ -85,6 +85,7 @@ pip install debugpy
 ;; Package setup
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 (package-initialize)
 
 ;; Bootstrap use-package
@@ -403,9 +404,13 @@ pip install debugpy
   (add-to-list 'compilation-error-regexp-alist 
                '("\\([a-zA-Z0-9\\.]+\\)(\\([0-9]+\\)\\(,\\([0-9]+\\)\\)?) \\(Warning:\\)?" 1 2 (4) (5))))
 
+;; Flymake is available but not auto-started
+;; Start manually with: M-x flymake-mode
+;; Or add to specific mode hooks if desired
+
 ;; Compilation keybindings - Global (work in Emacs state)
 (global-set-key (kbd "C-5") 'compile)
-(global-set-key (kbd "C-4") 'recompile)
+(global-set-key (kbd "C-S-5") 'recompile)
 
 ;; Evil mode keybindings for compilation
 (with-eval-after-load 'evil
@@ -413,6 +418,67 @@ pip install debugpy
   (dolist (state '(normal insert visual motion emacs))
     (evil-define-key state 'global (kbd "C-5") 'compile)
     (evil-define-key state 'global (kbd "C-S-5") 'recompile)))
+#+end_src
+
+* Project Management
+#+begin_src emacs-lisp
+;; Projectile - Project management and navigation
+(use-package projectile
+  :ensure t
+  :init
+  ;; Refresh package contents if projectile isn't available
+  (unless (package-installed-p 'projectile)
+    (package-refresh-contents))
+  
+  :config
+  ;; Enable projectile globally
+  (projectile-mode +1)
+  
+  ;; Allow projectile to work outside project roots
+  (setq projectile-require-project-root nil)
+  
+  ;; Completion system - use default (works with vertico/consult)
+  (setq projectile-completion-system 'default)
+  
+  ;; Indexing method - use native for speed
+  (setq projectile-indexing-method 'native)
+  
+  ;; Cache project files for better performance
+  (setq projectile-enable-caching t)
+  
+  ;; Show project name in mode line
+  (setq projectile-mode-line-prefix " Proj")
+  
+  ;; Project types - automatically detect project structure
+  ;; Projectile knows about git, Makefile, CMakeLists.txt, etc.
+  
+  ;; Keybindings - Global (work without Evil)
+  (define-key projectile-mode-map (kbd "C-c p") 'projectile-command-map)
+  
+  ;; Common projectile commands:
+  ;; C-c p p - Switch project
+  ;; C-c p f - Find file in project
+  ;; C-c p s r - Search in project (ripgrep)
+  ;; C-c p c - Compile project
+  ;; C-c p ! - Run shell command in project root
+  ;; C-c p d - Find directory in project
+  ;; C-c p b - Switch to project buffer
+  ;; C-c p k - Kill all project buffers
+  ;; C-c p D - Open project root in dired
+  
+  ;; Integration with dumb-jump - use project root for searches
+  (setq dumb-jump-default-project 'projectile))
+
+;; Evil mode keybindings for projectile
+(with-eval-after-load 'evil
+  (with-eval-after-load 'projectile
+    ;; SPC p prefix for project commands (normal mode)
+    (evil-define-key 'normal 'global (kbd "SPC p p") 'projectile-switch-project)
+    (evil-define-key 'normal 'global (kbd "SPC p f") 'projectile-find-file)
+    (evil-define-key 'normal 'global (kbd "SPC p s") 'projectile-ripgrep)
+    (evil-define-key 'normal 'global (kbd "SPC p c") 'projectile-compile-project)
+    (evil-define-key 'normal 'global (kbd "SPC p d") 'projectile-find-dir)
+    (evil-define-key 'normal 'global (kbd "SPC p b") 'projectile-switch-to-buffer)))
 #+end_src
 
 * Dired
@@ -471,6 +537,76 @@ pip install debugpy
 #+end_src
 
 * Programming - LSP & Completion
+** Dumb-jump - Code navigation without LSP
+#+begin_src emacs-lisp
+;; Dumb-jump: Jump to definitions using grep/ripgrep/ag
+;; Works without LSP, great for system headers like stdio.h
+(use-package dumb-jump
+  :config
+  ;; Use ripgrep for speed
+  (setq dumb-jump-prefer-searcher 'rg)
+  (setq dumb-jump-force-searcher 'rg)
+  
+  ;; Be aggressive in finding definitions
+  (setq dumb-jump-aggressive t)
+  
+  ;; Increase search time for large codebases
+  (setq dumb-jump-max-find-time 10)
+  
+  ;; Use projectile to determine project root (for non-C languages)
+  (setq dumb-jump-default-project 'projectile)
+  
+  ;; Recognize more project markers
+  (setq dumb-jump-project-denoters 
+        '(".git" ".hg" ".projectile" "Makefile" "CMakeLists.txt" 
+          "compile_commands.json" "go.mod" "package.json"))
+  
+  ;; Add dumb-jump to xref backends (makes M-. and M-, work)
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+  
+  ;; Keybindings
+  (global-set-key (kbd "C-M-g") 'dumb-jump-go)
+  (global-set-key (kbd "C-M-p") 'dumb-jump-back)
+  (global-set-key (kbd "C-M-q") 'dumb-jump-quick-look)
+  
+  ;; Prompt for custom search path
+  (global-set-key (kbd "C-M-j") 'dumb-jump-go-prompt)
+  
+  ;; Evil keybindings (default - works for all languages)
+  (with-eval-after-load 'evil
+    (dolist (state '(normal visual))
+      (evil-define-key state 'global (kbd "g d") 'dumb-jump-go)
+      (evil-define-key state 'global (kbd "g b") 'dumb-jump-back))))
+
+;; Search system includes for C/C++ (what worked!)
+(defun my/dumb-jump-system-includes ()
+  "Search for symbol in /usr/include using dumb-jump."
+  (interactive)
+  (let ((dumb-jump-default-project "/usr/include")
+        (dumb-jump-project-denoters nil))  ; Don't look for project markers
+    (call-interactively 'dumb-jump-go)))
+
+;; Make g d search system includes in C/C++ modes
+(defun my/setup-c-dumb-jump ()
+  "Override g d in C/C++ to search system includes."
+  (when (featurep 'evil)
+    (evil-define-key 'normal 'local (kbd "g d") 'my/dumb-jump-system-includes)))
+
+(add-hook 'c-mode-hook #'my/setup-c-dumb-jump)
+(add-hook 'c++-mode-hook #'my/setup-c-dumb-jump)
+(add-hook 'c-ts-mode-hook #'my/setup-c-dumb-jump)
+(add-hook 'c++-ts-mode-hook #'my/setup-c-dumb-jump)
+
+;; Keybinding reference:
+;; In C/C++ files:
+;;   g d or M-. → Search /usr/include (system headers like stdio.h)
+;; In other languages (Python, Go, JS, etc.):
+;;   g d or M-. → Search current project (uses projectile)
+;; Anywhere:
+;;   M-, → Go back
+;;   C-M-j → Prompt for custom search directory
+#+end_src
+
 ** Eglot LSP
 #+begin_src emacs-lisp
 ;; Manual LSP start keybinding (before use-package so it's always available)
@@ -797,7 +933,8 @@ pip install debugpy
          (magit-post-refresh . diff-hl-magit-post-refresh)))
 #+end_src
 
-* Custom Navigation Functions
+* Custom Functions
+** Project Navigation and Management
 #+begin_src emacs-lisp
 ;;==============================================================================
 ;; DIRECTORY CANDIDATES HELPER
@@ -824,10 +961,11 @@ pip install debugpy
     (nreverse dirs)))
 
 ;;==============================================================================
-;; CONSULT-BASED NAVIGATION FUNCTIONS
+;; CONSULT-BASED NAVIGATION (Integrated with Projectile)
 ;;==============================================================================
 (defun my/consult-sessionizer ()
-  "Consult-based directory selection. Opens selected directory in dired."
+  "Consult-based directory selection from custom folders. 
+Opens selected directory in dired and adds to projectile known projects."
   (interactive)
   (require 'consult)
   (let ((candidates (my/get-directory-candidates)))
@@ -838,23 +976,36 @@ pip install debugpy
                                             :sort nil
                                             :category 'file
                                             :history 'my/directory-history)))
+          ;; Create .projectile file to mark it as a project
+          (let ((projectile-marker (expand-file-name ".projectile" selected)))
+            (unless (file-exists-p projectile-marker)
+              (write-region "" nil projectile-marker)))
+          
           (dired selected)
-          (message "Opened: %s" selected))
+          
+          ;; Add to projectile known projects
+          (when (fboundp 'projectile-add-known-project)
+            (projectile-add-known-project selected))
+          
+          (message "Opened: %s (added to projectile)" selected))
       (dired default-directory)
       (message "No project directories found. Opened current directory."))))
 
-(defun my/consult-project-dirs ()
-  "Consult-based directory selection from common project directories."
-  (interactive)
-  (require 'consult)
-  (when-let* ((candidates (my/get-directory-candidates))
-              (selected (consult--read candidates
-                                      :prompt "Select directory: "
-                                      :require-match t
-                                      :sort nil
-                                      :category 'file
-                                      :history 'my/directory-history)))
-    (dired selected)))
+;; Add custom directories to projectile on startup
+(defun my/add-custom-dirs-to-projectile ()
+  "Add ALL directories from my/base-directories to projectile's known projects."
+  (when (fboundp 'projectile-add-known-project)
+    (dolist (dir (my/get-directory-candidates))
+      ;; Create .projectile file to mark as project
+      (let ((projectile-marker (expand-file-name ".projectile" dir)))
+        (unless (file-exists-p projectile-marker)
+          (write-region "" nil projectile-marker)))
+      ;; Add to known projects
+      (projectile-add-known-project dir))))
+
+(with-eval-after-load 'projectile
+  (my/add-custom-dirs-to-projectile))
+
 
 ;;==============================================================================
 ;; PROJECT CREATION
