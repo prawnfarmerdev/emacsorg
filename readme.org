@@ -152,30 +152,41 @@ pip install debugpy
 ;; Recent file setting 
 (recentf-mode 1)
 (setq recentf-max-saved-items 100)
+
+;;scroll settings
+(setq scroll-margin 10)
+(setq scroll-conservatively 101)
+(setq hscroll-margin 8)
+(setq auto-hscroll-mode t)
+
+
 #+end_src
 
 * Evil Mode Setup (Must be early)
 #+begin_src emacs-lisp
-;; Setup undo-tree BEFORE evil-mode
+;; Configure Evil settings BEFORE loading Evil
+(setq evil-want-integration t
+      evil-want-keybinding nil
+      evil-want-C-u-scroll t        ; Use C-u for scrolling up
+      evil-undo-system 'undo-tree)  ; Set undo system before Evil loads
+
+;; Undo-tree configuration
 (use-package undo-tree
   :config
   (global-undo-tree-mode)
   ;; Undo-tree history files
-  (setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo-tree")))
-  (make-directory "~/.emacs.d/undo-tree/" t)
-  ;; Tell evil to use undo-tree
-  (setq evil-undo-system 'undo-tree))
-
-;; Evil collection must be set up BEFORE evil-mode is enabled
-(setq evil-want-integration t)
-(setq evil-want-keybinding nil)
+  (setq undo-tree-history-directory-alist '(("." . "~/.emacs.d/undo-tree"))
+        undo-tree-auto-save-history t)
+  (make-directory "~/.emacs.d/undo-tree/" t))
 
 ;; Evil mode
 (use-package evil
-  :init
-  (setq evil-want-C-u-scroll t)  ; Use C-u for scrolling
   :config
-  (evil-mode 1))
+  (evil-mode 1)
+  
+  ;; Make C-p and C-n work for line navigation in all Evil states
+  (define-key evil-insert-state-map (kbd "C-p") 'previous-line)
+  (define-key evil-insert-state-map (kbd "C-n") 'next-line)
 
 ;; Evil collection for better vim bindings everywhere
 (use-package evil-collection
@@ -339,37 +350,33 @@ pip install debugpy
 #+begin_src emacs-lisp
 (use-package corfu
   :custom
-  ;; Enable auto-completion
-  (corfu-auto t)
-  (corfu-auto-delay 0.2)
-  (corfu-auto-prefix 2)
+  ;; Disable auto-completion
+  (corfu-auto nil)
+
   ;; Corfu behavior
-  (corfu-cycle t)                ; Enable cycling
-  (corfu-separator ?\s)          ; Use space as separator
-  (corfu-quit-at-boundary t)     ; Quit at completion boundary
-  (corfu-quit-no-match t)        ; Quit if no match
-  (corfu-preview-current nil)    ; Don't preview current
-  (corfu-preselect 'prompt)      ; Preselect prompt
-  (corfu-scroll-margin 5)        ; Margin for scrolling
+  (corfu-cycle t)
+  (corfu-separator ?\s)
+  (corfu-quit-at-boundary t)
+  (corfu-quit-no-match t)
+  (corfu-preview-current nil)
+  (corfu-preselect 'prompt)
+  (corfu-scroll-margin 5)
+
   :init
   (global-corfu-mode)
-  :config
-  ;; Keybindings for corfu-map
-  (define-key corfu-map (kbd "TAB") 'corfu-next)
-  (define-key corfu-map (kbd "<tab>") 'corfu-next)
-  (define-key corfu-map (kbd "S-TAB") 'corfu-previous)
-  (define-key corfu-map (kbd "<backtab>") 'corfu-previous)
-  (define-key corfu-map (kbd "RET") 'corfu-insert)
-  (define-key corfu-map (kbd "<return>") 'corfu-insert))
 
-;; Corfu extensions
-(use-package corfu-popupinfo
-  :ensure nil  ; Built into corfu package
-  :after corfu
-  :hook (corfu-mode . corfu-popupinfo-mode)
-  :custom
-  (corfu-popupinfo-delay '(0.5 . 0.2)))
-#+end_src
+  :config
+  ;; Manual trigger keybinding
+  (define-key global-map (kbd "M-/") #'completion-at-point)
+
+  ;; Corfu navigation keys
+  (define-key corfu-map (kbd "TAB") #'corfu-next)
+  (define-key corfu-map (kbd "<tab>") #'corfu-next)
+  (define-key corfu-map (kbd "S-TAB") #'corfu-previous)
+  (define-key corfu-map (kbd "<backtab>") #'corfu-previous)
+  (define-key corfu-map (kbd "RET") #'corfu-insert)
+  (define-key corfu-map (kbd "<return>") #'corfu-insert))
+  #+end_src
 
 ** Cape - Completion backends
 #+begin_src emacs-lisp
@@ -440,18 +447,11 @@ pip install debugpy
 #+end_src
 
 * Programming - LSP & Completion
-** Eglot LSP
+** LSP
 #+begin_src emacs-lisp
 (use-package eglot
   :ensure nil  ; Built-in for Emacs 29+
-  :hook (((python-mode python-ts-mode) . eglot-ensure)
-         ((go-mode go-ts-mode) . eglot-ensure)
-         ((c-mode c++-mode c-ts-mode c++-ts-mode) . eglot-ensure)
-         ((js-mode js-ts-mode typescript-mode typescript-ts-mode tsx-ts-mode) . eglot-ensure)
-         ((json-mode json-ts-mode) . eglot-ensure)
-         (yaml-mode . eglot-ensure)
-         (terraform-mode . eglot-ensure)
-         (dockerfile-mode . eglot-ensure))
+  :commands (eglot eglot-ensure)  ; Load eglot only when called
   :config
   ;; Keybindings (must be in :config since eglot-mode-map isn't defined until eglot loads)
   (define-key eglot-mode-map (kbd "C-c l a") 'eglot-code-actions)
