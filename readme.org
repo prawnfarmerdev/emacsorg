@@ -136,6 +136,12 @@ pip install debugpy
 ;; Highlight current line
 (global-hl-line-mode 1)
 
+;; Scroll settings
+(setq scroll-margin 10)
+(setq scroll-conservatively 101)
+(setq hscroll-margin 8)
+(setq auto-hscroll-mode t)
+
 ;; Change where file backups are created (file~)
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
 
@@ -175,7 +181,11 @@ pip install debugpy
   :init
   (setq evil-want-C-u-scroll t)  ; Use C-u for scrolling
   :config
-  (evil-mode 1))
+  (evil-mode 1)
+  
+  ;; Make C-p and C-n work for line navigation in all Evil states
+  (define-key evil-insert-state-map (kbd "C-p") 'previous-line)
+  (define-key evil-insert-state-map (kbd "C-n") 'next-line))
 
 ;; Evil collection for better vim bindings everywhere
 (use-package evil-collection
@@ -339,10 +349,8 @@ pip install debugpy
 #+begin_src emacs-lisp
 (use-package corfu
   :custom
-  ;; Enable auto-completion
-  (corfu-auto t)
-  (corfu-auto-delay 0.2)
-  (corfu-auto-prefix 2)
+  ;; Disable auto-completion - require manual trigger
+  (corfu-auto nil)
   ;; Corfu behavior
   (corfu-cycle t)                ; Enable cycling
   (corfu-separator ?\s)          ; Use space as separator
@@ -360,7 +368,11 @@ pip install debugpy
   (define-key corfu-map (kbd "S-TAB") 'corfu-previous)
   (define-key corfu-map (kbd "<backtab>") 'corfu-previous)
   (define-key corfu-map (kbd "RET") 'corfu-insert)
-  (define-key corfu-map (kbd "<return>") 'corfu-insert))
+  (define-key corfu-map (kbd "<return>") 'corfu-insert)
+  
+  ;; Manual completion trigger - bind to M-/ or C-M-i
+  (global-set-key (kbd "M-/") 'completion-at-point)
+  (global-set-key (kbd "C-M-i") 'completion-at-point))
 
 ;; Corfu extensions
 (use-package corfu-popupinfo
@@ -382,6 +394,25 @@ pip install debugpy
   :config
   ;; Silence the pcomplete capf, no errors or messages!
   (advice-add 'pcomplete-completions-at-point :around #'cape-wrap-silent))
+#+end_src
+
+* Compilation
+#+begin_src emacs-lisp
+;; Custom compilation error regexp for better error parsing
+(with-eval-after-load 'compile
+  (add-to-list 'compilation-error-regexp-alist 
+               '("\\([a-zA-Z0-9\\.]+\\)(\\([0-9]+\\)\\(,\\([0-9]+\\)\\)?) \\(Warning:\\)?" 1 2 (4) (5))))
+
+;; Compilation keybindings - Global (work in Emacs state)
+(global-set-key (kbd "C-5") 'compile)
+(global-set-key (kbd "C-4") 'recompile)
+
+;; Evil mode keybindings for compilation
+(with-eval-after-load 'evil
+  ;; Define in all evil states so they work everywhere
+  (dolist (state '(normal insert visual motion emacs))
+    (evil-define-key state 'global (kbd "C-5") 'compile)
+    (evil-define-key state 'global (kbd "C-S-5") 'recompile)))
 #+end_src
 
 * Dired
@@ -442,16 +473,11 @@ pip install debugpy
 * Programming - LSP & Completion
 ** Eglot LSP
 #+begin_src emacs-lisp
+;; Manual LSP start keybinding (before use-package so it's always available)
+(global-set-key (kbd "C-c l l") 'eglot)
+
 (use-package eglot
   :ensure nil  ; Built-in for Emacs 29+
-  :hook (((python-mode python-ts-mode) . eglot-ensure)
-         ((go-mode go-ts-mode) . eglot-ensure)
-         ((c-mode c++-mode c-ts-mode c++-ts-mode) . eglot-ensure)
-         ((js-mode js-ts-mode typescript-mode typescript-ts-mode tsx-ts-mode) . eglot-ensure)
-         ((json-mode json-ts-mode) . eglot-ensure)
-         (yaml-mode . eglot-ensure)
-         (terraform-mode . eglot-ensure)
-         (dockerfile-mode . eglot-ensure))
   :config
   ;; Keybindings (must be in :config since eglot-mode-map isn't defined until eglot loads)
   (define-key eglot-mode-map (kbd "C-c l a") 'eglot-code-actions)
