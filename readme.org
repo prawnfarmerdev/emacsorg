@@ -115,6 +115,8 @@ pip install debugpy
 
 ;; Set font
 (set-face-attribute 'default nil :font "CaskaydiaMono Nerd Font" :height 180)
+
+(set-frame-parameter nil 'alpha-background 95)
 #+end_src
 
 * Editor Settings
@@ -141,6 +143,10 @@ pip install debugpy
 (setq scroll-conservatively 101)
 (setq hscroll-margin 8)
 (setq auto-hscroll-mode t)
+
+;;disable line wrap
+(setq-default truncate-lines t)
+
 
 ;; Change where file backups are created (file~)
 (setq backup-directory-alist '(("." . "~/.emacs.d/backups")))
