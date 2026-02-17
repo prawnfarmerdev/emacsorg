@@ -1,8 +1,8 @@
 #+TITLE: PrawnFarmerDev Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el
 
-* Early Init (Performance & Warning Suppression) This section creates an early-init.el file for startup optimizations and warning suppression.
-
+* Early Init (Performance & Warning Suppression)
+This section creates an early-init.el file for startup optimizations and warning suppression.
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
 ;; early-init.el --- Early initialization -*- lexical-binding: t -*-
 
@@ -379,7 +379,7 @@ pip install debugpy
   (define-key corfu-map (kbd "<return>") 'corfu-insert)
   
   ;; Manual completion trigger - bind to M-/
-  (global-set-key (kbd "M-/") 'completion-at-point)
+  (global-set-key (kbd "M-/") 'completion-at-point))
 
 ;; Corfu extensions
 (use-package corfu-popupinfo
@@ -448,8 +448,9 @@ pip install debugpy
         '(".projectile" ".git" ".hg" ".bzr" "_darcs"))
   
   ;; Bottom-up markers (found in many directories, stops at first match going up)
+  ;; Include both "makefile" (lowercase, used by exercism C exercises) and "Makefile"
   (setq projectile-project-root-files-bottom-up
-        '(".projectile" ".git" ".hg" ".svn" "CVS" "Makefile" "CMakeLists.txt" 
+        '(".projectile" ".git" ".hg" ".svn" "CVS" "makefile" "Makefile" "CMakeLists.txt"
           "compile_commands.json" "go.mod" "package.json" "Cargo.toml"
           "pyproject.toml" "setup.py" "build.gradle" "pom.xml"))
   
@@ -488,17 +489,9 @@ pip install debugpy
   ;; C-c p b - Switch to project buffer (use consult for better UX)
   ;; C-c p k - Kill all project buffers
   ;; C-c p D - Open project root in dired
-  
-  ;; Integration with dumb-jump - use project root for searches
-  (setq dumb-jump-default-project 'projectile))
+  )
 
 ;; Use consult for better project buffer switching
-(with-eval-after-load 'projectile
-  (define-key projectile-mode-map (kbd "C-c p b") 'consult-project-buffer))
-
-;; Evil mode keybindings for projectile
-;; Note: Use standard Emacs bindings (C-c p ...) for navigation
-;; Evil is for editing, not navigation
 (with-eval-after-load 'projectile
   (define-key projectile-mode-map (kbd "C-c p b") 'consult-project-buffer))
 #+end_src
@@ -512,14 +505,9 @@ pip install debugpy
   ;; Standard Emacs binding
   (define-key dired-mode-map "." 'dired-hide-dotfiles-mode)
   
-  ;; Evil mode binding (if using evil-mode without evil-collection)
+  ;; Evil mode binding
   (with-eval-after-load 'evil
-    (evil-define-key 'normal dired-mode-map (kbd ".") 'dired-hide-dotfiles-mode))
-  
-  ;; Alternative: if using evil-collection, use this instead
-  ;; (evil-collection-define-key 'normal 'dired-mode-map
-     "." 'dired-hide-dotfiles-mode)
-  )
+    (evil-define-key 'normal dired-mode-map (kbd ".") 'dired-hide-dotfiles-mode)))
 #+end_src
 
 * Tree-sitter
@@ -580,38 +568,34 @@ Run this manually on first install to avoid blocking Emacs startup."
   (remove-hook 'xref-backend-functions #'etags--xref-backend)
   
   ;; Performance & Searcher settings
-  (setq dumb-jump-force-searcher 'rg)       ; Force Ripgrep
-  (setq dumb-jump-default-project 'projectile)
+  (setq dumb-jump-force-searcher 'rg)        ; Force Ripgrep
+  (setq dumb-jump-default-project "~/projects")
   (setq dumb-jump-selector 'completing-read) ; Use Vertico for selection
-  
-  ;; Don't be aggressive by default (can be noisy in comments/strings)
   (setq dumb-jump-aggressive nil)
-  
-  ;; Increase search time for large codebases
   (setq dumb-jump-max-find-time 10)
-  
-  ;; Recognize more project markers
-  (setq dumb-jump-project-denoters 
-        '(".git" ".hg" ".projectile" "Makefile" "CMakeLists.txt" 
-          "compile_commands.json" "go.mod" "package.json"))
-  
+
+  ;; IMPORTANT: All setq for dumb-jump-project-denoters must be in :config
+  ;; so it runs AFTER dumb-jump loads and doesn't get clobbered by defcustom.
+  ;; Include both "makefile" (lowercase, exercism/C) and "Makefile" (standard).
+  (setq dumb-jump-project-denoters
+        '(".git" ".hg" ".projectile" "makefile" "Makefile" "CMakeLists.txt"
+          "compile_commands.json" "go.mod" "package.json" "Cargo.toml"
+          "pyproject.toml" "setup.py"))
+
   ;; Ensure .h and .c files are both searched for C/C++
-  ;; Add custom file extensions if needed
   (add-to-list 'dumb-jump-language-file-exts '(:language "c" :ext "h" :agtype "cc" :rgtype "c"))
   (add-to-list 'dumb-jump-language-file-exts '(:language "c++" :ext "hpp" :agtype "cc" :rgtype "cpp"))
   (add-to-list 'dumb-jump-language-file-exts '(:language "c++" :ext "hh" :agtype "cc" :rgtype "cpp"))
-  
+
   ;; Keybindings
   ;; Note: M-. and M-, work automatically via xref integration
   ;; These are for forcing dumb-jump explicitly (bypassing LSP)
   (global-set-key (kbd "C-M-g") 'dumb-jump-go)
   (global-set-key (kbd "C-M-p") 'dumb-jump-back)
   (global-set-key (kbd "C-M-j") 'dumb-jump-go-prompt)
-  
+
   ;; Evil keybindings - use xref functions
   (with-eval-after-load 'evil
-    
-    ;; Also bind M-. and M-, to work in all Evil states
     (dolist (state '(normal insert visual motion emacs))
       (evil-define-key state 'global (kbd "M-.") 'xref-find-definitions)
       (evil-define-key state 'global (kbd "M-,") 'xref-go-back))))
@@ -626,7 +610,7 @@ Run this manually on first install to avoid blocking Emacs startup."
     (message "Searching /usr/include...")
     (dumb-jump-go)))
 
-;; Bind to M-s h (Alt+s h)  for quick system header search
+;; Bind to M-s h (Alt+s h) for quick system header search
 (global-set-key (kbd "M-s h") 'my/search-system-headers)
 
 ;; Keybinding reference:
@@ -634,7 +618,7 @@ Run this manually on first install to avoid blocking Emacs startup."
 ;; M-, or g b → Go back
 ;; C-M-g → Force dumb-jump (bypass LSP)
 ;; C-M-j → Prompt for custom search directory
-;; C-M-s → Search /usr/include system headers
+;; M-s h → Search /usr/include system headers
 #+end_src
 
 ** Eglot LSP
@@ -901,7 +885,6 @@ Run this manually on first install to avoid blocking Emacs startup."
 * Terminal
 #+begin_src emacs-lisp
 ;; Vterm - best terminal emulator for Emacs
-;; Vterm - best terminal emulator for Emacs
 (use-package vterm
   :config
   (setq vterm-always-compile-module t)
@@ -935,7 +918,7 @@ Run this manually on first install to avoid blocking Emacs startup."
           vterm-color-bright-white "#cccccc"))
   
   (add-hook 'vterm-mode-hook #'my/vterm-setup-colors))
-  #+end_src
+#+end_src
   
 * Visual Enhancements
 #+begin_src emacs-lisp
@@ -971,7 +954,7 @@ Run this manually on first install to avoid blocking Emacs startup."
 (defvar my/directory-history nil
   "History for directory selection.")
 
-(defvar my/base-directories '("~/projects" "~/.config" "~")
+(defvar my/base-directories '("~/projects" "~/exercism" "~/.config" "~")
   "Base directories to scan for projects.")
 
 (defun my/get-directory-candidates ()
@@ -1007,10 +990,12 @@ Opens selected directory in dired and adds to projectile known projects."
           (unless (or (file-exists-p (expand-file-name ".git" selected))
                       (file-exists-p (expand-file-name ".hg" selected))
                       (file-exists-p (expand-file-name "Makefile" selected))
+                      (file-exists-p (expand-file-name "makefile" selected))
                       (file-exists-p (expand-file-name "CMakeLists.txt" selected))
                       (file-exists-p (expand-file-name "compile_commands.json" selected))
                       (file-exists-p (expand-file-name "go.mod" selected))
                       (file-exists-p (expand-file-name "package.json" selected))
+                      (file-exists-p (expand-file-name "Cargo.toml" selected))
                       (file-exists-p (expand-file-name ".projectile" selected)))
             (write-region "" nil (expand-file-name ".projectile" selected)))
 
