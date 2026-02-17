@@ -610,15 +610,49 @@ Run this manually on first install to avoid blocking Emacs startup."
     (message "Searching /usr/include...")
     (dumb-jump-go)))
 
-;; Bind to M-s h (Alt+s h) for quick system header search
+;; Find a header FILE by name in /usr/include
+;; Use this when you have "stdio.h" highlighted and want to open the actual file.
+;; M-s h → search for definitions containing the word (ripgrep inside files)
+;; M-s H → find the header file itself by name (find -name)
+(defun my/find-system-header-file ()
+  "Find a header file by name in /usr/include.
+Uses region if active, otherwise word at point (adds .h if no extension)."
+  (interactive)
+  (let* ((raw (if (use-region-p)
+                  (buffer-substring-no-properties (region-beginning) (region-end))
+                (thing-at-point 'filename t)))
+         ;; If no extension detected, assume .h
+         (name (if (and raw (string-match-p "\\." raw))
+                   raw
+                 (concat raw ".h")))
+         (results (split-string
+                   (shell-command-to-string
+                    (format "find /usr/include -name '%s' 2>/dev/null" name))
+                   "\n" t)))
+    (cond
+     ((null results)
+      (message "No header file found for: %s" name))
+     ((= 1 (length results))
+      (find-file (car results))
+      (message "Opened: %s" (car results)))
+     (t
+      ;; Multiple matches - use completing-read to pick one
+      (let ((chosen (completing-read
+                     (format "Find header (%s): " name)
+                     results nil t)))
+        (find-file chosen))))))
+
+;; Bind to M-s h → content search, M-s H → file finder
 (global-set-key (kbd "M-s h") 'my/search-system-headers)
+(global-set-key (kbd "M-s H") 'my/find-system-header-file)
 
 ;; Keybinding reference:
 ;; M-. or g d → Smart jump (LSP → dumb-jump in current project)
 ;; M-, or g b → Go back
 ;; C-M-g → Force dumb-jump (bypass LSP)
 ;; C-M-j → Prompt for custom search directory
-;; M-s h → Search /usr/include system headers
+;; M-s h → Search for symbol definition in /usr/include (ripgrep inside files)
+;; M-s H → Find header FILE by name in /usr/include (e.g. highlight stdio.h → opens it)
 #+end_src
 
 ** Eglot LSP
