@@ -34,7 +34,6 @@
 
 * System Requirements
 Before using this configuration, install the following packages on your Arch system:
-
 ** Core tools
 #+begin_src bash :tangle no
 # Package manager and Git
@@ -161,7 +160,7 @@ pip install debugpy
 (setq recentf-max-saved-items 100)
 #+end_src
 
-* Evil Mode Setup (Must be early)
+* Evil Mode Setup
 #+begin_src emacs-lisp
 ;; Setup undo-tree BEFORE evil-mode
 (use-package undo-tree
@@ -274,7 +273,7 @@ pip install debugpy
 (use-package embark
   :bind
   (("C-." . embark-act)         ; Pick an action
-   ("M-." . embark-dwim)        ; Do what I mean
+   ;; Don't bind M-. - let xref use it for go-to-definition
    ("C-h B" . embark-bindings)) ; Show all bindings
   :config
   ;; Show embark actions in a helpful buffer
@@ -288,6 +287,14 @@ pip install debugpy
 
 ** Consult - Enhanced search/navigation
 #+begin_src emacs-lisp
+;; Configure xref to use consult for better UI
+(use-package xref
+  :ensure nil  ; Built-in
+  :config
+  ;; Use Consult to select xref locations with preview
+  (setq xref-show-xrefs-function       #'consult-xref
+        xref-show-definitions-function #'consult-xref))
+
 (use-package consult
   :bind (;; C-x bindings (ctl-x-map)
          ("C-x b" . consult-buffer)
@@ -371,9 +378,8 @@ pip install debugpy
   (define-key corfu-map (kbd "RET") 'corfu-insert)
   (define-key corfu-map (kbd "<return>") 'corfu-insert)
   
-  ;; Manual completion trigger - bind to M-/ or C-M-i
+  ;; Manual completion trigger - bind to M-/
   (global-set-key (kbd "M-/") 'completion-at-point)
-  (global-set-key (kbd "C-M-i") 'completion-at-point))
 
 ;; Corfu extensions
 (use-package corfu-popupinfo
@@ -410,14 +416,14 @@ pip install debugpy
 
 ;; Compilation keybindings - Global (work in Emacs state)
 (global-set-key (kbd "C-5") 'compile)
-(global-set-key (kbd "C-S-5") 'recompile)
+(global-set-key (kbd "C-4") 'recompile)
 
 ;; Evil mode keybindings for compilation
 (with-eval-after-load 'evil
   ;; Define in all evil states so they work everywhere
   (dolist (state '(normal insert visual motion emacs))
     (evil-define-key state 'global (kbd "C-5") 'compile)
-    (evil-define-key state 'global (kbd "C-S-5") 'recompile)))
+    (evil-define-key state 'global (kbd "C-4") 'recompile)))
 #+end_src
 
 * Project Management
@@ -436,6 +442,23 @@ pip install debugpy
   
   ;; Allow projectile to work outside project roots
   (setq projectile-require-project-root nil)
+  
+  ;; Project root markers (top-down search from current directory upward)
+  (setq projectile-project-root-files
+        '(".projectile" ".git" ".hg" ".bzr" "_darcs"))
+  
+  ;; Bottom-up markers (found in many directories, stops at first match going up)
+  (setq projectile-project-root-files-bottom-up
+        '(".projectile" ".git" ".hg" ".svn" "CVS" "Makefile" "CMakeLists.txt" 
+          "compile_commands.json" "go.mod" "package.json" "Cargo.toml"
+          "pyproject.toml" "setup.py" "build.gradle" "pom.xml"))
+  
+  ;; Functions to detect project root (in order of precedence)
+  (setq projectile-project-root-files-functions
+        '(projectile-root-local
+          projectile-root-bottom-up
+          projectile-root-top-down
+          projectile-root-top-down-recurring))
   
   ;; Completion system - use default (works with vertico/consult)
   (setq projectile-completion-system 'default)
@@ -462,41 +485,41 @@ pip install debugpy
   ;; C-c p c - Compile project
   ;; C-c p ! - Run shell command in project root
   ;; C-c p d - Find directory in project
-  ;; C-c p b - Switch to project buffer
+  ;; C-c p b - Switch to project buffer (use consult for better UX)
   ;; C-c p k - Kill all project buffers
   ;; C-c p D - Open project root in dired
   
   ;; Integration with dumb-jump - use project root for searches
   (setq dumb-jump-default-project 'projectile))
 
+;; Use consult for better project buffer switching
+(with-eval-after-load 'projectile
+  (define-key projectile-mode-map (kbd "C-c p b") 'consult-project-buffer))
+
 ;; Evil mode keybindings for projectile
-(with-eval-after-load 'evil
-  (with-eval-after-load 'projectile
-    ;; SPC p prefix for project commands (normal mode)
-    (evil-define-key 'normal 'global (kbd "SPC p p") 'projectile-switch-project)
-    (evil-define-key 'normal 'global (kbd "SPC p f") 'projectile-find-file)
-    (evil-define-key 'normal 'global (kbd "SPC p s") 'projectile-ripgrep)
-    (evil-define-key 'normal 'global (kbd "SPC p c") 'projectile-compile-project)
-    (evil-define-key 'normal 'global (kbd "SPC p d") 'projectile-find-dir)
-    (evil-define-key 'normal 'global (kbd "SPC p b") 'projectile-switch-to-buffer)))
+;; Note: Use standard Emacs bindings (C-c p ...) for navigation
+;; Evil is for editing, not navigation
+(with-eval-after-load 'projectile
+  (define-key projectile-mode-map (kbd "C-c p b") 'consult-project-buffer))
 #+end_src
 
 * Dired
 #+begin_src emacs-lisp
-;; Sort directories first (requires GNU ls)
-(setq dired-listing-switches "-alh --group-directories-first")
-
-;; Enable dired-dwim-target (copy/move between two dired buffers)
-(setq dired-dwim-target t)
-
-;; Auto-revert dired buffers
-(setq dired-auto-revert-buffer t)
-
 ;; Hide dotfiles by default
 (use-package dired-hide-dotfiles
   :hook (dired-mode . dired-hide-dotfiles-mode)
   :config
-  (define-key dired-mode-map "." 'dired-hide-dotfiles-mode))
+  ;; Standard Emacs binding
+  (define-key dired-mode-map "." 'dired-hide-dotfiles-mode)
+  
+  ;; Evil mode binding (if using evil-mode without evil-collection)
+  (with-eval-after-load 'evil
+    (evil-define-key 'normal dired-mode-map (kbd ".") 'dired-hide-dotfiles-mode))
+  
+  ;; Alternative: if using evil-collection, use this instead
+  ;; (evil-collection-define-key 'normal 'dired-mode-map
+     "." 'dired-hide-dotfiles-mode)
+  )
 #+end_src
 
 * Tree-sitter
@@ -520,17 +543,22 @@ pip install debugpy
           (typescript "https://github.com/tree-sitter/tree-sitter-typescript" "master" "typescript/src")
           (yaml "https://github.com/ikatyang/tree-sitter-yaml")))
   
-  ;; Auto-install grammars on first use
-  (dolist (lang treesit-language-source-alist)
-    (unless (treesit-language-available-p (car lang))
-      (message "Installing tree-sitter grammar for %s..." (car lang))
-      (treesit-install-language-grammar (car lang))))
+  ;; Manual installation function (run this once: M-x my/install-tree-sitter-grammars)
+  (defun my/install-tree-sitter-grammars ()
+    "Install all configured tree-sitter grammars.
+Run this manually on first install to avoid blocking Emacs startup."
+    (interactive)
+    (dolist (lang treesit-language-source-alist)
+      (unless (treesit-language-available-p (car lang))
+        (message "Installing tree-sitter grammar for %s..." (car lang))
+        (treesit-install-language-grammar (car lang)))))
   
   ;; treesit-auto: automatically use tree-sitter modes when available
+  ;; This will prompt you to install grammars on-demand when you open files
   (use-package treesit-auto
     :demand t
     :config
-    ;; Don't auto-install grammars (we already install them above)
+    ;; Prompt to install grammars when needed (not at startup)
     (setq treesit-auto-install 'prompt)
     ;; Enable globally
     (global-treesit-auto-mode)))
@@ -542,69 +570,71 @@ pip install debugpy
 ;; Dumb-jump: Jump to definitions using grep/ripgrep/ag
 ;; Works without LSP, great for system headers like stdio.h
 (use-package dumb-jump
-  :config
-  ;; Use ripgrep for speed
-  (setq dumb-jump-prefer-searcher 'rg)
-  (setq dumb-jump-force-searcher 'rg)
+  :init
+  ;; CRITICAL: Use 'append to let Eglot/LSP run first!
+  ;; This makes dumb-jump a fallback when LSP doesn't know the definition
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate 'append)
   
-  ;; Be aggressive in finding definitions
-  (setq dumb-jump-aggressive t)
+  :config
+  ;; Disable etags backend to prevent TAGS file errors
+  (remove-hook 'xref-backend-functions #'etags--xref-backend)
+  
+  ;; Performance & Searcher settings
+  (setq dumb-jump-force-searcher 'rg)       ; Force Ripgrep
+  (setq dumb-jump-default-project 'projectile)
+  (setq dumb-jump-selector 'completing-read) ; Use Vertico for selection
+  
+  ;; Don't be aggressive by default (can be noisy in comments/strings)
+  (setq dumb-jump-aggressive nil)
   
   ;; Increase search time for large codebases
   (setq dumb-jump-max-find-time 10)
-  
-  ;; Use projectile to determine project root (for non-C languages)
-  (setq dumb-jump-default-project 'projectile)
   
   ;; Recognize more project markers
   (setq dumb-jump-project-denoters 
         '(".git" ".hg" ".projectile" "Makefile" "CMakeLists.txt" 
           "compile_commands.json" "go.mod" "package.json"))
   
-  ;; Add dumb-jump to xref backends (makes M-. and M-, work)
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+  ;; Ensure .h and .c files are both searched for C/C++
+  ;; Add custom file extensions if needed
+  (add-to-list 'dumb-jump-language-file-exts '(:language "c" :ext "h" :agtype "cc" :rgtype "c"))
+  (add-to-list 'dumb-jump-language-file-exts '(:language "c++" :ext "hpp" :agtype "cc" :rgtype "cpp"))
+  (add-to-list 'dumb-jump-language-file-exts '(:language "c++" :ext "hh" :agtype "cc" :rgtype "cpp"))
   
   ;; Keybindings
+  ;; Note: M-. and M-, work automatically via xref integration
+  ;; These are for forcing dumb-jump explicitly (bypassing LSP)
   (global-set-key (kbd "C-M-g") 'dumb-jump-go)
   (global-set-key (kbd "C-M-p") 'dumb-jump-back)
-  (global-set-key (kbd "C-M-q") 'dumb-jump-quick-look)
-  
-  ;; Prompt for custom search path
   (global-set-key (kbd "C-M-j") 'dumb-jump-go-prompt)
   
-  ;; Evil keybindings (default - works for all languages)
+  ;; Evil keybindings - use xref functions
   (with-eval-after-load 'evil
-    (dolist (state '(normal visual))
-      (evil-define-key state 'global (kbd "g d") 'dumb-jump-go)
-      (evil-define-key state 'global (kbd "g b") 'dumb-jump-back))))
+    
+    ;; Also bind M-. and M-, to work in all Evil states
+    (dolist (state '(normal insert visual motion emacs))
+      (evil-define-key state 'global (kbd "M-.") 'xref-find-definitions)
+      (evil-define-key state 'global (kbd "M-,") 'xref-go-back))))
 
-;; Search system includes for C/C++ (what worked!)
-(defun my/dumb-jump-system-includes ()
-  "Search for symbol in /usr/include using dumb-jump."
+
+;; Direct search in /usr/include
+(defun my/search-system-headers ()
+  "Search for symbol at point in /usr/include system headers."
   (interactive)
   (let ((dumb-jump-default-project "/usr/include")
-        (dumb-jump-project-denoters nil))  ; Don't look for project markers
-    (call-interactively 'dumb-jump-go)))
+        (dumb-jump-project-denoters nil))
+    (message "Searching /usr/include...")
+    (dumb-jump-go)))
 
-;; Make g d search system includes in C/C++ modes
-(defun my/setup-c-dumb-jump ()
-  "Override g d in C/C++ to search system includes."
-  (when (featurep 'evil)
-    (evil-define-key 'normal 'local (kbd "g d") 'my/dumb-jump-system-includes)))
-
-(add-hook 'c-mode-hook #'my/setup-c-dumb-jump)
-(add-hook 'c++-mode-hook #'my/setup-c-dumb-jump)
-(add-hook 'c-ts-mode-hook #'my/setup-c-dumb-jump)
-(add-hook 'c++-ts-mode-hook #'my/setup-c-dumb-jump)
+;; Bind to M-s h (Alt+s h)  for quick system header search
+(global-set-key (kbd "M-s h") 'my/search-system-headers)
 
 ;; Keybinding reference:
-;; In C/C++ files:
-;;   g d or M-. → Search /usr/include (system headers like stdio.h)
-;; In other languages (Python, Go, JS, etc.):
-;;   g d or M-. → Search current project (uses projectile)
-;; Anywhere:
-;;   M-, → Go back
-;;   C-M-j → Prompt for custom search directory
+;; M-. or g d → Smart jump (LSP → dumb-jump in current project)
+;; M-, or g b → Go back
+;; C-M-g → Force dumb-jump (bypass LSP)
+;; C-M-j → Prompt for custom search directory
+;; C-M-s → Search /usr/include system headers
 #+end_src
 
 ** Eglot LSP
@@ -702,6 +732,7 @@ pip install debugpy
          ("C-c d R" . dape-repl)))
 
 ;; Dape configurations for different languages
+;; Note: dape-buffer-default is a special symbol that dape expands to the current buffer's file
 (with-eval-after-load 'dape
   ;; Python (debugpy) - install with: pip install debugpy
   (add-to-list 'dape-configs
@@ -935,10 +966,8 @@ pip install debugpy
 
 * Custom Functions
 ** Project Navigation and Management
+*** Directory Candidates Helper
 #+begin_src emacs-lisp
-;;==============================================================================
-;; DIRECTORY CANDIDATES HELPER
-;;==============================================================================
 (defvar my/directory-history nil
   "History for directory selection.")
 
@@ -951,92 +980,69 @@ pip install debugpy
     (dolist (base-dir my/base-directories)
       (let ((expanded (expand-file-name base-dir)))
         (when (file-directory-p expanded)
-          ;; Add the base directory
           (push expanded dirs)
-          ;; Add subdirectories
           (when-let ((subdirs (directory-files expanded t directory-files-no-dot-files-regexp t)))
             (dolist (subdir subdirs)
               (when (file-directory-p subdir)
                 (push subdir dirs)))))))
     (nreverse dirs)))
-
-;;==============================================================================
-;; CONSULT-BASED NAVIGATION (Integrated with Projectile)
-;;==============================================================================
+#+end_src
+*** Consult-Based Navigation (Integrated with Projectile)
+#+begin_src emacs-lisp
 (defun my/consult-sessionizer ()
-  "Consult-based directory selection from custom folders. 
+  "Consult-based directory selection from custom folders.
 Opens selected directory in dired and adds to projectile known projects."
   (interactive)
   (require 'consult)
   (let ((candidates (my/get-directory-candidates)))
     (if candidates
-        (when-let ((selected (consult--read candidates
-                                            :prompt "Select directory: "
-                                            :require-match t
-                                            :sort nil
-                                            :category 'file
-                                            :history 'my/directory-history)))
-          ;; Create .projectile file to mark it as a project
-          (let ((projectile-marker (expand-file-name ".projectile" selected)))
-            (unless (file-exists-p projectile-marker)
-              (write-region "" nil projectile-marker)))
-          
+        (when-let ((selected
+                    (consult--read candidates
+                                   :prompt "Select directory: "
+                                   :require-match t
+                                   :sort nil
+                                   :category 'file
+                                   :history 'my/directory-history)))
+
+          (unless (or (file-exists-p (expand-file-name ".git" selected))
+                      (file-exists-p (expand-file-name ".hg" selected))
+                      (file-exists-p (expand-file-name "Makefile" selected))
+                      (file-exists-p (expand-file-name "CMakeLists.txt" selected))
+                      (file-exists-p (expand-file-name "compile_commands.json" selected))
+                      (file-exists-p (expand-file-name "go.mod" selected))
+                      (file-exists-p (expand-file-name "package.json" selected))
+                      (file-exists-p (expand-file-name ".projectile" selected)))
+            (write-region "" nil (expand-file-name ".projectile" selected)))
+
           (dired selected)
-          
-          ;; Add to projectile known projects
+
           (when (fboundp 'projectile-add-known-project)
             (projectile-add-known-project selected))
-          
+
           (message "Opened: %s (added to projectile)" selected))
       (dired default-directory)
       (message "No project directories found. Opened current directory."))))
+#+end_src
 
-;; Add custom directories to projectile on startup
-(defun my/add-custom-dirs-to-projectile ()
-  "Add ALL directories from my/base-directories to projectile's known projects."
-  (when (fboundp 'projectile-add-known-project)
-    (dolist (dir (my/get-directory-candidates))
-      ;; Create .projectile file to mark as project
-      (let ((projectile-marker (expand-file-name ".projectile" dir)))
-        (unless (file-exists-p projectile-marker)
-          (write-region "" nil projectile-marker)))
-      ;; Add to known projects
-      (projectile-add-known-project dir))))
-
-(with-eval-after-load 'projectile
-  (my/add-custom-dirs-to-projectile))
-
-
-;;==============================================================================
-;; PROJECT CREATION
-;;==============================================================================
+*** Project Creation
+#+begin_src emacs-lisp
 (defun my/git-init-and-commit (project-dir project-name)
-  "Initialize git repo and create initial commit in PROJECT-DIR for PROJECT-NAME."
+  "Initialize git repo and create initial commit."
   (let ((default-directory project-dir))
-    (unless (zerop (call-process "git" nil nil nil "init" "-b" "main"))
-      (error "Failed to initialize git repository"))
-    
-    ;; Create README.md
+    (call-process "git" nil nil nil "init" "-b" "main")
+
     (with-temp-file (expand-file-name "README.md" project-dir)
       (insert (format "# %s\n\nProject description\n" project-name)))
-    
-    ;; Initial commit
-    (unless (zerop (call-process "git" nil nil nil "add" "README.md"))
-      (error "Failed to stage README.md"))
-    (unless (zerop (call-process "git" nil nil nil "commit" "-m" "initial commit"))
-      (error "Failed to create initial commit"))
-    (message "Git repository initialized with initial commit")))
+
+    (call-process "git" nil nil nil "add" "README.md")
+    (call-process "git" nil nil nil "commit" "-m" "initial commit")))
 
 (defun my/create-github-repo (project-name visibility)
-  "Create GitHub repository for PROJECT-NAME with VISIBILITY."
-  (let ((command (format "gh repo create %s %s --source=. --remote=origin --push" 
-                         project-name visibility)))
-    (message "Creating GitHub repository...")
-    (if (zerop (call-process-shell-command command))
-        (progn
-          (message "GitHub repository created: %s" project-name)
-          (sleep-for 1))
-      (message "Warning: GitHub repository creation may have failed"))))
+  "Create GitHub repository."
+  (let ((command
+         (format "gh repo create %s %s --source=. --remote=origin --push"
+                 project-name visibility)))
+    (call-process-shell-command command)))
 
 (defun my/create-new-project ()
   "Create new project directory with git and optional GitHub setup."
@@ -1044,50 +1050,40 @@ Opens selected directory in dired and adds to projectile known projects."
   (let* ((project-name (string-trim (read-string "Project name: ")))
          (project-dir (expand-file-name project-name "~/projects"))
          (gh-available (executable-find "gh"))
-         (create-github (and gh-available (y-or-n-p "Create GitHub repository? ")))
+         (create-github (and gh-available
+                             (y-or-n-p "Create GitHub repository? ")))
          (visibility (when create-github
                        (if (y-or-n-p "Public repository? ")
                            "--public"
                          "--private"))))
-    
-    ;; Validate
+
     (when (string-empty-p project-name)
       (user-error "Project name cannot be empty"))
-    
-    (when (file-exists-p project-dir)
-      (unless (y-or-n-p (format "Directory %s exists. Use it? " project-dir))
-        (user-error "Project directory already exists")))
-    
-    ;; Create project
+
     (make-directory project-dir t)
-    (message "Created: %s" project-dir)
-    
-    ;; Initialize git if needed
+
     (unless (file-exists-p (expand-file-name ".git" project-dir))
       (my/git-init-and-commit project-dir project-name)
-      
-      ;; Create GitHub repo if requested
       (when create-github
         (my/create-github-repo project-name visibility)))
-    
-    ;; Open in dired
-    (dired project-dir)))
 
-;;==============================================================================
-;; GITHUB PR HELPER
-;;==============================================================================
+    (dired project-dir)))
+#+end_src
+
+*** GitHub PR Helper
+#+begin_src emacs-lisp
 (defun my/get-git-info ()
   "Get git remote URL and current branch."
-  (let ((default-directory (or default-directory
-                               (and buffer-file-name 
-                                    (file-name-directory buffer-file-name))
-                               "~/")))
-    (when (locate-dominating-file default-directory ".git")
-      (let ((remote (string-trim (shell-command-to-string "git config --get remote.origin.url")))
-            (branch (string-trim (shell-command-to-string "git rev-parse --abbrev-ref HEAD"))))
-        (when (and (not (string-empty-p remote))
-                   (not (string-empty-p branch)))
-          (cons remote branch))))))
+  (when (locate-dominating-file default-directory ".git")
+    (let ((remote (string-trim
+                   (shell-command-to-string
+                    "git config --get remote.origin.url")))
+          (branch (string-trim
+                   (shell-command-to-string
+                    "git rev-parse --abbrev-ref HEAD"))))
+      (when (and (not (string-empty-p remote))
+                 (not (string-empty-p branch)))
+        (cons remote branch)))))
 
 (defun my/convert-to-github-url (remote-url)
   "Convert git REMOTE-URL to GitHub HTTPS URL."
@@ -1096,43 +1092,30 @@ Opens selected directory in dired and adds to projectile known projects."
     (concat "https://github.com/" (match-string 1 remote-url)))
    ((string-match "^https://github\\.com/\\(.+?\\)\\(?:\\.git\\)?$" remote-url)
     (concat "https://github.com/" (match-string 1 remote-url)))
-   ((not (string-match-p "github\\.com" remote-url))
-    (error "Not a GitHub repository: %s" remote-url))
-   (t remote-url)))
+   (t (error "Not a GitHub repository"))))
 
 (defun my/open-github-pr ()
-  "Open GitHub compare page for current branch in browser."
+  "Open GitHub compare page for current branch."
   (interactive)
   (if-let* ((git-info (my/get-git-info))
             (remote-url (car git-info))
             (branch (cdr git-info))
-            (github-url (my/convert-to-github-url remote-url))
-            (compare-url (concat github-url "/compare/" branch)))
-      (progn
-        (browse-url compare-url)
-        (message "Opening: %s" compare-url))
-    (user-error "Not in a git repository or missing remote/branch")))
+            (github-url (my/convert-to-github-url remote-url)))
+      (browse-url (concat github-url "/compare/" branch))
+    (user-error "Not in a git repository")))
+#+end_src
 
-;;==============================================================================
-;; KEYBINDINGS
-;;==============================================================================
-;; Global keybindings (work in Emacs state and when Evil is not loaded)
-(global-set-key (kbd "C-c p s") 'my/consult-sessionizer)
-(global-set-key (kbd "C-c p n") 'my/create-new-project)
-(global-set-key (kbd "C-c p r") 'my/open-github-pr)
+*** Keybindings
+#+begin_src emacs-lisp
+(global-set-key (kbd "C-c p s") #'my/consult-sessionizer)
+(global-set-key (kbd "C-c p n") #'my/create-new-project)
+(global-set-key (kbd "C-c p r") #'my/open-github-pr)
 
-;; Evil mode keybindings (must be defined in Evil states)
 (with-eval-after-load 'evil
-  ;; Define in all evil states so they work everywhere
   (dolist (state '(normal insert visual motion emacs))
-    (evil-define-key state 'global (kbd "C-S-f") 'my/consult-sessionizer)
-    (evil-define-key state 'global (kbd "C-S-n") 'my/create-new-project)
-    (evil-define-key state 'global (kbd "C-S-p") 'my/open-github-pr))
-  
-  ;; SPC leader keybindings (normal mode only)
-  (evil-define-key 'normal 'global (kbd "SPC p s") 'my/consult-sessionizer)
-  (evil-define-key 'normal 'global (kbd "SPC p n") 'my/create-new-project)
-  (evil-define-key 'normal 'global (kbd "SPC p r") 'my/open-github-pr))
+    (evil-define-key state 'global (kbd "C-S-f") #'my/consult-sessionizer)
+    (evil-define-key state 'global (kbd "C-S-n") #'my/create-new-project)
+    (evil-define-key state 'global (kbd "C-S-p") #'my/open-github-pr)))
 #+end_src
 
 * Performance Optimizations
