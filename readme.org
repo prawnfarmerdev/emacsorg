@@ -124,7 +124,7 @@ pip install debugpy
 (load-file (expand-file-name "config/theme.el" user-emacs-directory))
 
 ;; Set font
-(set-face-attribute 'default nil :font "CaskaydiaMono Nerd Font" :height 180)
+(set-face-attribute 'default nil :font "CaskaydiaMono Nerd Font" :height 150)
 
 (set-frame-parameter nil 'alpha-background 95)
 #+end_src
@@ -202,6 +202,9 @@ pip install debugpy
   ;; Make C-p and C-n work for line navigation in all Evil states
   (define-key evil-insert-state-map (kbd "C-p") 'previous-line)
   (define-key evil-insert-state-map (kbd "C-n") 'next-line))
+  ;; Buffer nav to h and l
+  (evil-define-key '(normal insert visual) 'global (kbd "C-S-h") 'previous-buffer)
+  (evil-define-key '(normal insert visual) 'global (kbd "C-S-l") 'next-buffer)
 
 ;; Evil collection for better vim bindings everywhere
 (use-package evil-collection
