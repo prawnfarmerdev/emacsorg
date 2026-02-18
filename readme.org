@@ -205,6 +205,8 @@ pip install debugpy
   ;; Buffer nav to h and l
   (evil-define-key '(normal insert visual) 'global (kbd "C-S-h") 'switch-to-prev-buffer)
   (evil-define-key '(normal insert visual) 'global (kbd "C-S-l") 'switch-to-next-buffer)
+  (global-set-key (kbd "C-S-h") 'previous-buffer)
+  (global-set-key (kbd "C-S-l") 'next-buffer)
 
 ;; Evil collection for better vim bindings everywhere
 (use-package evil-collection
