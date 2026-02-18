@@ -83,20 +83,30 @@ pip install debugpy
 #+begin_src emacs-lisp
 ;; Package setup
 (require 'package)
-(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+
+(setq package-archives
+      '(("melpa"        . "https://melpa.org/packages/")
+        ("melpa-stable" . "https://stable.melpa.org/packages/")))
+
+(condition-case nil
+    (package-refresh-contents)
+  (error
+   (message "Falling back to MELPA mirror...")
+   (setq package-archives
+         '(("melpa"        . "https://www.mirrorservice.org/sites/melpa.org/packages/")
+           ("melpa-stable" . "https://www.mirrorservice.org/sites/stable.melpa.org/packages/")))
+   (package-refresh-contents)))
+
 (package-initialize)
 
 ;; Bootstrap use-package
 (unless (package-installed-p 'use-package)
-  (package-refresh-contents)
   (package-install 'use-package))
 
-;; Load use-package
 (require 'use-package)
 (setq use-package-always-ensure t)
 
-;; Suppress additional byte-compilation warnings
+;; Suppress byte-compilation warnings
 (setq byte-compile-warnings '(not obsolete cl-functions))
 #+end_src
 
@@ -214,6 +224,7 @@ pip install debugpy
 
 (use-package vertico
   :ensure t
+  :demand t
   :init
   (setq completion-styles '(basic substring partial-completion flex)
         completion-ignore-case t
@@ -959,7 +970,7 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
   
   (add-hook 'vterm-mode-hook #'my/vterm-setup-colors))
 #+end_src
-  
+
 * Visual Enhancements
 #+begin_src emacs-lisp
 ;; Rainbow delimiters - colorful parentheses
