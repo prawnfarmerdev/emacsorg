@@ -896,7 +896,7 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
          (org-agenda-finalize . org-modern-agenda))
   :custom
   ;; Modern styling
-  (org-modern-star '("●" "○" "✸" "✿"))
+  (org-modern-star '("→" "↳" "▶" "▷"))
   (org-modern-table nil)  ; Set to t if you want modern table styling
   (org-modern-hide-stars nil)  ; Show decorative stars
   (org-modern-block-fringe nil)
