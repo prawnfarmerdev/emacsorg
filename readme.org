@@ -1,4 +1,3 @@
-
 #+TITLE: PrawnFarmerDev Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el
 
@@ -136,7 +135,7 @@ pip install debugpy
 (load-file (expand-file-name "config/theme.el" user-emacs-directory))
 
 ;; Set font
-(set-face-attribute 'default nil :font "CaskaydiaMono Nerd Font" :height 180)
+(set-face-attribute 'default nil :font "CaskaydiaMono Nerd Font" :height 160)
 
 (set-frame-parameter nil 'alpha-background 95)
 #+end_src
@@ -800,18 +799,13 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
   (setf (alist-get 'json-mode       apheleia-mode-alist) 'prettier))
 #+end_src
 
-
+** Major mode settings
 #+begin_src emacs-lisp
-(use-package go-mode         :defer t :mode "\\.go\\'")
-(use-package typescript-mode :defer t
-  :mode (("\\.ts\\'"  . typescript-mode)
-         ("\\.tsx\\'" . tsx-ts-mode)))
 (use-package json-mode       :defer t :mode "\\.json\\'")
 (use-package yaml-mode       :defer t :mode "\\.ya?ml\\'")
 (use-package terraform-mode  :defer t :mode "\\.tf\\'")
 (use-package dockerfile-mode :defer t :mode "Dockerfile\\'")
 
-;; Kubernetes & Helm YAML files
 (dolist (pattern '("\\.k8s\\.ya?ml\\'"
                    "k8s/.*\\.ya?ml\\'"
                    "Chart\\.yaml\\'"
@@ -819,7 +813,7 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
                    "templates/.*\\.yaml\\'"
                    "templates/.*\\.tpl\\'"))
   (add-to-list 'auto-mode-alist `(,pattern . yaml-mode)))
-#+end_src
+  #+end_src
 
 * Debugging with Dape
 #+begin_src emacs-lisp
