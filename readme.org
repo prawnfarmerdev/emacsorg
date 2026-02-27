@@ -96,7 +96,9 @@ pip install debugpy
 
 (setq package-archives
       '(("melpa"        . "https://www.mirrorservice.org/sites/melpa.org/packages/")
-        ("melpa-stable" . "https://www.mirrorservice.org/sites/stable.melpa.org/packages/")))
+        ("melpa-stable" . "https://www.mirrorservice.org/sites/stable.melpa.org/packages/")
+        ("gnu"          . "https://elpa.gnu.org/packages/")
+        ("nongnu"       . "https://elpa.nongnu.org/nongnu/")))
 
 (condition-case nil
     (package-refresh-contents)
@@ -290,8 +292,11 @@ pip install debugpy
 
   ;; Buffer cycling - all evil states + vanilla Emacs
   (evil-define-key '(normal insert visual) 'global
+    (kbd "C-<tab>") #'consult-buffer
     (kbd "C-S-h") #'previous-buffer
     (kbd "C-S-l") #'next-buffer)
+  (global-set-key (kbd "C-<tab>") #'consult-buffer)
+  (global-set-key (kbd "C-6") #'evil-prev-buffer)
   (global-set-key (kbd "C-S-h") #'previous-buffer)
   (global-set-key (kbd "C-S-l") #'next-buffer)
   (global-set-key (kbd "M-o")   #'other-window)
