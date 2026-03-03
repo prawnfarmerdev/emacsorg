@@ -137,7 +137,7 @@ pip install debugpy
 (load-file (expand-file-name "config/theme.el" user-emacs-directory))
 
 ;; Set font
-(set-face-attribute 'default nil :font "CaskaydiaMono Nerd Font" :height 160)
+(set-face-attribute 'default nil :font "CaskaydiaMono Nerd Font Mono" :weight'semilight :height 200)
 
 (set-frame-parameter nil 'alpha-background 95)
 #+end_src
@@ -615,9 +615,11 @@ Works like Projectile's bottom-up detection - no git required."
   :bind (:map dired-mode-map
          ("." . dired-hide-dotfiles-mode))
   :config
+  (setq dired-kill-when-opening-new-dired-buffer t)
   (with-eval-after-load 'evil
     (evil-define-key 'normal dired-mode-map
       (kbd ".") #'dired-hide-dotfiles-mode)))
+
 #+end_src
 
 * Tree-sitter
