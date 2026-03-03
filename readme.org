@@ -300,6 +300,13 @@ pip install debugpy
   (global-set-key (kbd "C-S-h") #'previous-buffer)
   (global-set-key (kbd "C-S-l") #'next-buffer)
   (global-set-key (kbd "M-o")   #'other-window)
+  ;; M-O (Shift + M-o) → previous window
+  (global-set-key (kbd "M-O")
+                (lambda ()
+                  (interactive)
+                  (other-window -1)))
+  ;; C-0 → kill current buffer
+  (global-set-key (kbd "C-0") #'kill-current-buffer)
   (global-set-key (kbd "M-j")   #'duplicate-dwim)
   (global-set-key (kbd "C-M-z") #'delete-pair))
 
