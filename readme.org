@@ -440,7 +440,7 @@ pip install debugpy
                                 "--smart-case --no-heading --with-filename "
                                 "--line-number --search-zip "
                                 "--hidden --glob=!.git/"))
-  (consult-preview-key  nil)
+  (consult-preview-key  "C-S-p")
   (consult-narrow-key   "<"))
 
 ;; Dired integration for consult keybindings
