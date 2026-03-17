@@ -176,14 +176,14 @@ pip install debugpy
 ;; Highlight current line
 (global-hl-line-mode 1)
 
-;; Scroll settings
-(setq scroll-margin 10
-      scroll-conservatively 101
-      hscroll-margin 8
-      auto-hscroll-mode t)
-
-;; Smooth pixel-level scrolling (Emacs 29+)
+;; 1. The modern standard for smooth scrolling (Emacs 29+)
 (pixel-scroll-precision-mode 1)
+
+;; 2. Keep cursor at the same screen position
+(setq scroll-preserve-screen-position t)
+
+;; 3. Prevent the "jump" when cursor hits the edge
+(setq scroll-conservatively 101)
 
 ;; Prefer vertical (side-by-side) splits on widescreen monitors
 (setq split-width-threshold  170
@@ -1149,6 +1149,10 @@ Pair with M-s M-. to search+copy the word under point."
   (proced-filter               'user)   ; show only your processes; change with 'f'
   :hook
   (proced-mode . (lambda () (proced-toggle-auto-update 1))))
+
+;;; tramp
+;;; http://stackoverflow.com/questions/13794433/how-to-disable-autosave-for-tramp-buffers-in-emacs
+(setq tramp-auto-save-directory "/tmp")
 #+end_src
 
 * Custom Functions
