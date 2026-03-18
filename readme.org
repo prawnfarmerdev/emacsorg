@@ -286,6 +286,15 @@ pip install debugpy
   :config
   (evil-mode 1)
 
+(with-eval-after-load 'evil
+  (evil-ex-define-cmd "q" (lambda ()
+    (interactive)
+    (if (> (count-windows) 1)
+        (delete-window)
+      (kill-current-buffer))))
+  (evil-ex-define-cmd "q!" 'kill-current-buffer))
+
+
   ;; Make C-p and C-n work for line navigation in insert state
   (define-key evil-insert-state-map (kbd "C-p") #'previous-line)
   (define-key evil-insert-state-map (kbd "C-n") #'next-line)
