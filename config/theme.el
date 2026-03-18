@@ -107,7 +107,7 @@
    `(font-lock-type-face          ((t (:foreground ,menudo-yellow-bright))))
    `(font-lock-function-name-face ((t (:foreground ,menudo-orange-burnt))))
    `(font-lock-variable-name-face ((t (:foreground ,menudo-fg))))
-   `(font-lock-variable-use-face  ((t (:foreground ,menudo-blue))))
+   `(font-lock-variable-use-face  ((t (:foreground ,menudo-lavender))))
    `(font-lock-warning-face       ((t (:foreground ,menudo-red      :weight bold))))
    `(font-lock-doc-face           ((t (:foreground ,menudo-green))))
 
