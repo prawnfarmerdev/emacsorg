@@ -67,6 +67,7 @@
        ;; Browns
        (menudo-brown           "#bf9948")
 
+
        ;; Mode line
        (menudo-modeline-fg     "#cccccc")
        (menudo-modeline-bg     "#9f5600")
