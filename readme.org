@@ -1040,7 +1040,7 @@ The buffer is named *vterm: NAME*."
                     :category 'buffer)))
       (if (equal choice "[new session]")
           (call-interactively #'my/multi-vterm-switch)
-        (switch-to-buffer choice))))
+        (switch-to-buffer choice)))))
  
  
 #+end_src
