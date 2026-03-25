@@ -149,7 +149,7 @@ pip install debugpy
 
 ;; Relative line numbers - stable width so text doesn't jump at line 100/1000
 (setq display-line-numbers-type  'relative
-      display-line-numbers-width 4
+      display-line-numbers-width 8
       display-line-numbers-widen t)
 (add-hook 'text-mode-hook #'display-line-numbers-mode)
 (add-hook 'prog-mode-hook  #'display-line-numbers-mode)
@@ -330,22 +330,24 @@ pip install debugpy
 * Completion Framework
 ** FIDO + ICOMPLETE
 #+begin_src emacs-lisp
-;;; │ FIDO + ICOMPLETE
-(use-package icomplete
-  :ensure nil
+  ;;; │ FIDO + ICOMPLETE
+  (use-package icomplete
+    :ensure nil
+  :bind (:map icomplete-fido-mode-map
+              ("RET"        . icomplete-fido-ret)
+              ("<S-return>" . icomplete-fido-exit))
   :hook
-  (after-init-hook . (lambda ()
-                       (fido-vertical-mode 1)))
-  :config
-  (setq icomplete-delay-completions-threshold 0
-        icomplete-compute-delay               0
-        icomplete-show-matches-on-no-input    t
-        icomplete-hide-common-prefix          nil
-        icomplete-prospects-height            10
-        icomplete-max-delay-chars             0
-        icomplete-scroll                      t))
+    (after-init-hook . (lambda ()
+                         (fido-vertical-mode 1)))
+    :config
+    (setq icomplete-delay-completions-threshold 0
+          icomplete-compute-delay               0
+          icomplete-show-matches-on-no-input    t
+          icomplete-hide-common-prefix          nil
+          icomplete-prospects-height            10
+          icomplete-max-delay-chars             0
+          icomplete-scroll                      t))
 #+end_src
-
 ** Consult - Enhanced search/navigation
 #+begin_src emacs-lisp
 ;; xref: use consult for UI and ripgrep for searching
@@ -651,80 +653,126 @@ Works like Projectile's bottom-up detection - no git required."
       (evil-lookup)))
   (with-eval-after-load 'evil
     (evil-define-key 'normal 'global (kbd "K") #'my/devdocs-or-fallback)))
+
+(defvar woman-topic-history nil
+  "History for WoMan topic prompts.")
+
+
 #+end_src
 
 ** Dumb-jump - Code navigation without LSP
 #+begin_src emacs-lisp
-(use-package dumb-jump
-  :demand t
-  :init
-  ;; 'append = runs AFTER Eglot so it's a fallback when LSP finds nothing
-  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate 'append)
-  :custom
-  (dumb-jump-force-searcher  'rg)
-  (dumb-jump-default-project "~/projects")
-  (dumb-jump-selector        'completing-read)
-  ;; aggressive nil = only search in project, not everywhere
-  (dumb-jump-aggressive      nil)
-  (dumb-jump-max-find-time   10)
-  :config
-  ;; Remove etags to prevent TAGS file errors
-  (remove-hook 'xref-backend-functions #'etags--xref-backend)
+  (use-package dumb-jump
+    :demand t
+    :init
+    ;; 'append = runs AFTER Eglot so it's a fallback when LSP finds nothing
+    (add-hook 'xref-backend-functions #'dumb-jump-xref-activate 'append)
+    :custom
+    (dumb-jump-force-searcher  'rg)
+    (dumb-jump-default-project "~/projects")
+    (dumb-jump-selector        'completing-read)
+    ;; aggressive nil = only search in project, not everywhere
+    (dumb-jump-aggressive      nil)
+    (dumb-jump-max-find-time   10)
+    :config
+    ;; Remove etags to prevent TAGS file errors
+    (remove-hook 'xref-backend-functions #'etags--xref-backend)
 
-  ;; When Eglot is active it errors instead of returning nil when it can't
-  ;; find a definition, which prevents dumb-jump from getting a chance.
-  ;; This advice catches that and falls through to the next xref backend.
-  (defun my/xref-find-definitions-fallback (orig-fn identifier)
-    "Try ORIG-FN, fall back to dumb-jump if it returns nil or errors."
-    (condition-case nil
-        (let ((result (funcall orig-fn identifier)))
-          (if (and result (not (null result)))
-              result
-            (dumb-jump-go)))
-      (error (dumb-jump-go))))
-  (advice-add 'xref-find-definitions :around #'my/xref-find-definitions-fallback)
+    ;; When Eglot is active it errors instead of returning nil when it can't
+    ;; find a definition, which prevents dumb-jump from getting a chance.
+    ;; This advice catches that and falls through to the next xref backend.
+    (defun my/xref-find-definitions-fallback (orig-fn identifier)
+      "Try ORIG-FN, fall back to dumb-jump if it returns nil or errors."
+      (condition-case nil
+          (let ((result (funcall orig-fn identifier)))
+            (if (and result (not (null result)))
+                result
+              (dumb-jump-go)))
+        (error (dumb-jump-go))))
+    (advice-add 'xref-find-definitions :around #'my/xref-find-definitions-fallback)
 
-  ;; Must be set in :config so defcustom doesn't clobber it after load
-  (setq dumb-jump-project-denoters
-        '(".git" ".hg"
-          "makefile" "Makefile" "CMakeLists.txt"
-          "compile_commands.json" "go.mod" "package.json"
-          "Cargo.toml" "pyproject.toml" "setup.py"))
+    ;; Must be set in :config so defcustom doesn't clobber it after load
+    (setq dumb-jump-project-denoters
+          '(".git" ".hg"
+            "makefile" "Makefile" "CMakeLists.txt"
+            "compile_commands.json" "go.mod" "package.json"
+            "Cargo.toml" "pyproject.toml" "setup.py"))
 
-  (add-to-list 'dumb-jump-language-file-exts
-               '(:language "c"   :ext "h"   :agtype "cc" :rgtype "c"))
-  (add-to-list 'dumb-jump-language-file-exts
-               '(:language "c++" :ext "hpp" :agtype "cc" :rgtype "cpp"))
-  (add-to-list 'dumb-jump-language-file-exts
-               '(:language "c++" :ext "hh"  :agtype "cc" :rgtype "cpp"))
+    (add-to-list 'dumb-jump-language-file-exts
+                 '(:language "c"   :ext "h"   :agtype "cc" :rgtype "c"))
+    (add-to-list 'dumb-jump-language-file-exts
+                 '(:language "c++" :ext "hpp" :agtype "cc" :rgtype "cpp"))
+    (add-to-list 'dumb-jump-language-file-exts
+                 '(:language "c++" :ext "hh"  :agtype "cc" :rgtype "cpp"))
 
-  ;; Larger ring prevents dumb-jump's double-push from landing at history start
-  (setq xref-marker-ring-length 16)
+    ;; Larger ring prevents dumb-jump's double-push from landing at history start
+    (setq xref-marker-ring-length 16)
 
-  ;; Force dumb-jump explicitly (bypassing LSP)
-  (global-set-key (kbd "C-M-g") #'dumb-jump-go)
-  (global-set-key (kbd "C-M-p") #'dumb-jump-back)
-  (global-set-key (kbd "C-M-j") #'dumb-jump-go-prompt)
+    ;; Force dumb-jump explicitly (bypassing LSP)
+    (global-set-key (kbd "C-M-g") #'dumb-jump-go)
+    (global-set-key (kbd "C-M-p") #'dumb-jump-back)
+    (global-set-key (kbd "C-M-j") #'dumb-jump-go-prompt)
 
-  (with-eval-after-load 'evil
-    (dolist (state '(normal insert visual motion emacs))
-      (evil-define-key state 'global
-        (kbd "M-.") #'xref-find-definitions
-        (kbd "M-,") #'xref-go-back)))
+    (with-eval-after-load 'evil
+      (dolist (state '(normal insert visual motion emacs))
+        (evil-define-key state 'global
+          (kbd "M-.") #'xref-find-definitions
+          (kbd "M-,") #'xref-go-back)))
 
-  ;; NOTE: evil's C-o (back) / C-i (forward) are more reliable than M-,
-  ;; for navigating after dumb-jump since they use evil's own jump list
-  ;; instead of xref's marker ring.
-  )
+    ;; NOTE: evil's C-o (back) / C-i (forward) are more reliable than M-,
+    ;; for navigating after dumb-jump since they use evil's own jump list
+    ;; instead of xref's marker ring.
+    )
 
 ;; Direct search in /usr/include
+(defun my/get-system-search-paths ()
+  "Return a list of relevant system paths based on current major mode."
+  (pcase major-mode
+    ((or 'c-mode 'c-ts-mode 'c++-mode 'c++-ts-mode)
+     (seq-filter #'file-directory-p
+                 '("/usr/include"
+                   "/usr/local/include"
+                   "/usr/lib/clang")))
+    ((or 'go-mode 'go-ts-mode)
+     (seq-filter #'file-directory-p
+                 (list
+                  (when (getenv "GOROOT")
+                    (expand-file-name "src" (getenv "GOROOT")))
+                  "/usr/local/go/src"
+                  "/usr/lib/go/src")))
+    ((or 'python-mode 'python-ts-mode)
+     (seq-filter #'file-directory-p
+                 (append
+                  (list "/usr/lib/python3"
+                        "/usr/local/lib/python3")
+                  (file-expand-wildcards "/usr/lib/python3.*")
+                  (file-expand-wildcards "/usr/local/lib/python3.*"))))
+    (_
+     (seq-filter #'file-directory-p
+                 (list "/usr/include"
+                       "/usr/local/include"
+                       (when (getenv "GOROOT")
+                         (expand-file-name "src" (getenv "GOROOT")))
+                       "/usr/local/go/src")))))
+
 (defun my/search-system-headers ()
-  "Search for symbol at point in /usr/include system headers."
+  "Search for symbol at point in system headers/stdlib based on current major mode.
+Supports C (/usr/include), Go (GOROOT), and Python (stdlib site-packages)."
   (interactive)
-  (let ((dumb-jump-default-project  "/usr/include")
-        (dumb-jump-project-denoters nil))
-    (message "Searching /usr/include...")
-    (dumb-jump-go)))
+  (let* ((symbol (thing-at-point 'symbol t))
+         (search-paths (my/get-system-search-paths))
+         (path (if (length> search-paths 1)
+                   (completing-read
+                    (format "Search '%s' in: " symbol)
+                    search-paths nil t)
+                 (car search-paths))))
+    (if (and path (file-directory-p path))
+        (let ((dumb-jump-default-project path)
+              (dumb-jump-project-denoters nil))
+          (message "Searching '%s' in %s..." symbol path)
+          (dumb-jump-go))
+      (user-error "No valid search path found for %s. Path: %s"
+                  major-mode path))))
 
 ;; Find a header FILE by name in /usr/include
 (defun my/find-system-header-file ()
@@ -750,13 +798,15 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
 (global-set-key (kbd "M-s h") #'my/search-system-headers)
 (global-set-key (kbd "M-s H") #'my/find-system-header-file)
 
-;; Keybinding reference:
-;; M-. / g d    → Smart jump (LSP → dumb-jump fallback)
-;; M-, / g b    → Go back
-;; C-M-g        → Force dumb-jump (bypass LSP)
-;; C-M-j        → Prompt for custom search directory
-;; M-s h        → Search for symbol in /usr/include
-;; M-s H        → Find header FILE by name in /usr/include
+
+
+  ;; Keybinding reference:
+  ;; M-. / g d    → Smart jump (LSP → dumb-jump fallback)
+  ;; M-, / g b    → Go back
+  ;; C-M-g        → Force dumb-jump (bypass LSP)
+  ;; C-M-j        → Prompt for custom search directory
+  ;; M-s h        → Search for symbol in /usr/include
+  ;; M-s H        → Find header FILE by name in /usr/include
 #+end_src
 
 ** Eglot LSP
