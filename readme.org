@@ -623,7 +623,19 @@ Works like Projectile's bottom-up detection - no git required."
   :custom
   (treesit-auto-install 'prompt)
   :config
+  (let ((nix-recipe (make-treesit-auto-recipe
+                     :lang 'nix
+                     :ts-mode 'nix-ts-mode
+                     :remap 'nix-mode
+                     :url "https://github.com/nix-community/tree-sitter-nix"
+                     :revision "master"
+                     :source-dir "src")))
+    (add-to-list 'treesit-auto-recipe-list nix-recipe))
   (global-treesit-auto-mode))
+
+(use-package nix-ts-mode
+  :mode "\\.nix\\'")
+
 #+end_src
 
 * Programming - LSP & Completion
