@@ -619,13 +619,18 @@ Works like Projectile's bottom-up detection - no git required."
 
 * Tree-sitter
 #+begin_src emacs-lisp
-;; treesit-auto handles mode switching and on-demand grammar installation
+;; treesit-auto handles mode switching. Grammars are provided declaratively
+;; by Nix (see home/emacs.nix) and exposed through EMACS_TREESIT_GRAMMARS, so
+;; never try to clone/compile them with a C compiler.
 (use-package treesit-auto
   :if (and (fboundp 'treesit-available-p) (treesit-available-p))
   :demand t
   :custom
-  (treesit-auto-install 'prompt)
+  (treesit-auto-install nil)
   :config
+  (when-let* ((dir (getenv "EMACS_TREESIT_GRAMMARS"))
+              ((file-directory-p dir)))
+    (add-to-list 'treesit-extra-load-path dir))
   (let ((nix-recipe (make-treesit-auto-recipe
                      :lang 'nix
                      :ts-mode 'nix-ts-mode
