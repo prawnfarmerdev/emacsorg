@@ -262,31 +262,72 @@ pip install debugpy
 
 #+end_src
 
-* Undo & Navigation
+* Evil Mode Setup
 #+begin_src emacs-lisp
-;; Persistent undo history
+;; Setup undo-tree BEFORE evil-mode
 (use-package undo-tree
   :defer t
   :config
   (let ((undo-dir (expand-file-name "undo-tree/" user-emacs-directory)))
     (make-directory undo-dir t)
     (setq undo-tree-history-directory-alist `(("." . ,undo-dir))))
+  (setq evil-undo-system 'undo-tree)
   (global-undo-tree-mode))
 
-;; Buffer cycling / window navigation
-(global-set-key (kbd "C-<tab>") #'ido-switch-buffer)
-(global-set-key (kbd "C-S-h")   #'previous-buffer)
-(global-set-key (kbd "C-S-l")   #'next-buffer)
-(global-set-key (kbd "M-o")     #'other-window)
-;; M-O (Shift + M-o) → previous window
-(global-set-key (kbd "M-O")
+;; These must be set before evil loads
+(setq evil-want-integration t
+      evil-want-keybinding nil)
+
+;; Evil mode
+(use-package evil
+  :demand t
+  :init
+  (setq evil-want-C-u-scroll t)  ; Use C-u for scrolling
+  :config
+  (evil-mode 1)
+
+(with-eval-after-load 'evil
+  (evil-ex-define-cmd "q" (lambda ()
+    (interactive)
+    (if (> (count-windows) 1)
+        (delete-window)
+      (kill-current-buffer))))
+  (evil-ex-define-cmd "q!" 'kill-current-buffer))
+
+
+  ;; Make C-p and C-n work for line navigation in insert state
+  (define-key evil-insert-state-map (kbd "C-p") #'previous-line)
+  (define-key evil-insert-state-map (kbd "C-n") #'next-line)
+
+  ;; Buffer cycling - all evil states + vanilla Emacs
+  (evil-define-key '(normal insert visual) 'global
+    (kbd "C-<tab>") #'ido-switch-buffer
+    (kbd "C-S-h") #'previous-buffer
+    (kbd "C-S-l") #'next-buffer)
+  (global-set-key (kbd "C-<tab>") #'ido-switch-buffer)
+  (global-set-key (kbd "C-6") #'evil-prev-buffer)
+  (global-set-key (kbd "C-S-h") #'previous-buffer)
+  (global-set-key (kbd "C-S-l") #'next-buffer)
+  (global-set-key (kbd "M-o")   #'other-window)
+  ;; M-O (Shift + M-o) → previous window
+  (global-set-key (kbd "M-O")
                 (lambda ()
                   (interactive)
                   (other-window -1)))
-;; C-0 → kill current buffer
-(global-set-key (kbd "C-0")     #'kill-current-buffer)
-(global-set-key (kbd "M-j")     #'duplicate-dwim)
-(global-set-key (kbd "C-M-z")   #'delete-pair)
+  ;; C-0 → kill current buffer
+  (global-set-key (kbd "C-0") #'kill-current-buffer)
+  (global-set-key (kbd "M-j")   #'duplicate-dwim)
+  (global-set-key (kbd "C-M-z") #'delete-pair))
+
+;; Toggle Evil mode globally (C-c v).  Use `evil-local-mode' for one buffer.
+(global-set-key (kbd "C-c v") #'evil-mode)
+
+;; Evil collection for better vim bindings everywhere
+(use-package evil-collection
+  :after evil
+  :demand t
+  :config
+  (evil-collection-init))
 #+end_src
 
 * Completion Framework
@@ -357,7 +398,15 @@ pip install debugpy
   (define-key dired-mode-map (kbd "M-s /") #'consult-ripgrep)
   (define-key dired-mode-map (kbd "M-s g") #'consult-grep)
   (define-key dired-mode-map (kbd "M-s b") #'consult-buffer)
-  (define-key dired-mode-map (kbd "M-s r") #'consult-recent-file))
+  (define-key dired-mode-map (kbd "M-s r") #'consult-recent-file)
+  (when (featurep 'evil)
+    (dolist (state '(normal visual motion insert))
+      (evil-define-key state dired-mode-map
+        (kbd "M-s s") #'consult-find
+        (kbd "M-s /") #'consult-ripgrep
+        (kbd "M-s g") #'consult-grep
+        (kbd "M-s b") #'consult-buffer
+        (kbd "M-s r") #'consult-recent-file))))
 
 (with-eval-after-load 'dired
   (my/dired-setup-consult-keys)
@@ -456,6 +505,12 @@ otherwise."
 (global-set-key (kbd "C-5") #'compile)
 (global-set-key (kbd "C-4") #'recompile)
 
+(with-eval-after-load 'evil
+  (dolist (state '(normal insert visual motion emacs))
+    (evil-define-key state 'global
+      (kbd "C-5") #'compile
+      (kbd "C-4") #'recompile)))
+
 ;; consult-compile-errors: consult interface over the *compilation* buffer.
 ;; Works without LSP - reads errors parsed by compilation-error-regexp-alist.
 ;; Use instead of (or alongside) consult-flymake.
@@ -516,6 +571,9 @@ parser as `next-error' / `M-g n'."
             (recenter)))))))
 
 (global-set-key (kbd "C-c e") #'my/consult-compile-errors)
+(with-eval-after-load 'evil
+  (dolist (state '(normal insert visual motion emacs))
+    (evil-define-key state 'global (kbd "C-c e") #'my/consult-compile-errors)))
 #+end_src
 
 * Project Management
@@ -552,7 +610,10 @@ Works like Projectile's bottom-up detection - no git required."
   :bind (:map dired-mode-map
          ("." . dired-hide-dotfiles-mode))
   :config
-  (setq dired-kill-when-opening-new-dired-buffer t))
+  (setq dired-kill-when-opening-new-dired-buffer t)
+  (with-eval-after-load 'evil
+    (evil-define-key 'normal dired-mode-map
+      (kbd ".") #'dired-hide-dotfiles-mode)))
 
 #+end_src
 
@@ -597,7 +658,16 @@ Works like Projectile's bottom-up detection - no git required."
          (ruby-mode       . (lambda () (setq-local devdocs-current-docs '("ruby~3.3")))))
   :bind (("M-s d d" . devdocs-lookup)
          ("M-s d i" . devdocs-install)
-         ("M-s d s" . devdocs-search)))
+         ("M-s d s" . devdocs-search))
+  :config
+  (defun my/devdocs-or-fallback ()
+    "Try devdocs-lookup, fall back to evil's default K."
+    (interactive)
+    (if devdocs-current-docs
+        (devdocs-lookup nil (thing-at-point 'symbol t))
+      (evil-lookup)))
+  (with-eval-after-load 'evil
+    (evil-define-key 'normal 'global (kbd "K") #'my/devdocs-or-fallback)))
 
 (defvar woman-topic-history nil
   "History for WoMan topic prompts.")
@@ -657,8 +727,17 @@ Works like Projectile's bottom-up detection - no git required."
     (global-set-key (kbd "C-M-g") #'dumb-jump-go)
     (global-set-key (kbd "C-M-p") #'dumb-jump-back)
     (global-set-key (kbd "C-M-j") #'dumb-jump-go-prompt)
-    (global-set-key (kbd "M-.")   #'xref-find-definitions)
-    (global-set-key (kbd "M-,")   #'xref-go-back))
+
+    (with-eval-after-load 'evil
+      (dolist (state '(normal insert visual motion emacs))
+        (evil-define-key state 'global
+          (kbd "M-.") #'xref-find-definitions
+          (kbd "M-,") #'xref-go-back)))
+
+    ;; NOTE: evil's C-o (back) / C-i (forward) are more reliable than M-,
+    ;; for navigating after dumb-jump since they use evil's own jump list
+    ;; instead of xref's marker ring.
+    )
 
 ;; Direct search in /usr/include
 (defun my/get-system-search-paths ()
@@ -1031,6 +1110,12 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
         (switch-to-buffer choice))))
   (global-set-key (kbd "C-c T") #'my/ghostel-switch))
 
+;; Evil integration for Ghostel terminals (ESC routing, normal-state jumps).
+(use-package evil-ghostel
+  :ensure t
+  :after (ghostel evil)
+  :hook (ghostel-mode . evil-ghostel-mode))
+
 ;; Consult picker for Ghostel terminals (live preview, create-on-miss).
 (use-package consult-ghostel
   :ensure t
@@ -1261,9 +1346,13 @@ Opens selected directory in dired and registers it with project.el."
 (global-set-key (kbd "C-c p s") #'my/consult-sessionizer)
 (global-set-key (kbd "C-c p n") #'my/create-new-project)
 (global-set-key (kbd "C-c p r") #'my/open-github-pr)
-(global-set-key (kbd "C-S-f")   #'my/consult-sessionizer)
-(global-set-key (kbd "C-S-n")   #'my/create-new-project)
-(global-set-key (kbd "C-S-p")   #'my/open-github-pr)
+
+(with-eval-after-load 'evil
+  (dolist (state '(normal insert visual motion emacs))
+    (evil-define-key state 'global
+      (kbd "C-S-f") #'my/consult-sessionizer
+      (kbd "C-S-n") #'my/create-new-project
+      (kbd "C-S-p") #'my/open-github-pr)))
 #+end_src
 
 * Performance Optimizations
