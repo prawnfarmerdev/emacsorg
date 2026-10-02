@@ -137,7 +137,7 @@ pip install debugpy
 (load-file (expand-file-name "config/theme.el" user-emacs-directory))
 
 ;; Set font
-(set-face-attribute 'default nil :font "CaskaydiaMono Nerd Font Mono" :weight'semilight :height 200)
+(set-face-attribute 'default nil :font "Inconsolata Nerd Font" :weight 'bold :height 200)
 
 (set-frame-parameter nil 'alpha-background 95)
 #+end_src
