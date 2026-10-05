@@ -158,7 +158,7 @@ pip install debugpy
 (delete-selection-mode 1)
 
 ;; Electric pair (deferred - only needed when editing begins)
-(use-package electric-pair
+(use-package elec-pair
   :ensure nil
   :defer t
   :hook (after-init . electric-pair-mode))
@@ -262,94 +262,75 @@ pip install debugpy
 
 #+end_src
 
-* Evil Mode Setup
+* Visual Enhancements
 #+begin_src emacs-lisp
-;; Setup undo-tree BEFORE evil-mode
+(use-package rainbow-delimiters
+  :defer t
+  :hook (prog-mode . rainbow-delimiters-mode))
+#+end_src
+
+* Undo & Navigation
+#+begin_src emacs-lisp
+;; Persistent undo history
 (use-package undo-tree
   :defer t
   :config
   (let ((undo-dir (expand-file-name "undo-tree/" user-emacs-directory)))
     (make-directory undo-dir t)
     (setq undo-tree-history-directory-alist `(("." . ,undo-dir))))
-  (setq evil-undo-system 'undo-tree)
   (global-undo-tree-mode))
 
-;; These must be set before evil loads
-(setq evil-want-integration t
-      evil-want-keybinding nil)
-
-;; Evil mode
-(use-package evil
-  :demand t
-  :init
-  (setq evil-want-C-u-scroll t)  ; Use C-u for scrolling
-  :config
-  (evil-mode 1)
-
-(with-eval-after-load 'evil
-  (evil-ex-define-cmd "q" (lambda ()
-    (interactive)
-    (if (> (count-windows) 1)
-        (delete-window)
-      (kill-current-buffer))))
-  (evil-ex-define-cmd "q!" 'kill-current-buffer))
-
-
-  ;; Make C-p and C-n work for line navigation in insert state
-  (define-key evil-insert-state-map (kbd "C-p") #'previous-line)
-  (define-key evil-insert-state-map (kbd "C-n") #'next-line)
-
-  ;; Buffer cycling - all evil states + vanilla Emacs
-  (evil-define-key '(normal insert visual) 'global
-    (kbd "C-<tab>") #'ido-switch-buffer
-    (kbd "C-S-h") #'previous-buffer
-    (kbd "C-S-l") #'next-buffer)
-  (global-set-key (kbd "C-<tab>") #'ido-switch-buffer)
-  (global-set-key (kbd "C-6") #'evil-prev-buffer)
-  (global-set-key (kbd "C-S-h") #'previous-buffer)
-  (global-set-key (kbd "C-S-l") #'next-buffer)
-  (global-set-key (kbd "M-o")   #'other-window)
-  ;; M-O (Shift + M-o) → previous window
-  (global-set-key (kbd "M-O")
+;; Buffer cycling / window navigation
+(global-set-key (kbd "C-<tab>") #'ido-switch-buffer)
+(global-set-key (kbd "C-6")     #'previous-buffer)
+(global-set-key (kbd "C-S-h")   #'previous-buffer)
+(global-set-key (kbd "C-S-l")   #'next-buffer)
+(global-set-key (kbd "M-o")     #'other-window)
+;; M-O (Shift + M-o) → previous window
+(global-set-key (kbd "M-O")
                 (lambda ()
                   (interactive)
                   (other-window -1)))
-  ;; C-0 → kill current buffer
-  (global-set-key (kbd "C-0") #'kill-current-buffer)
-  (global-set-key (kbd "M-j")   #'duplicate-dwim)
-  (global-set-key (kbd "C-M-z") #'delete-pair))
+;; C-0 → kill current buffer
+(global-set-key (kbd "C-0")     #'kill-current-buffer)
+(global-set-key (kbd "M-j")     #'duplicate-dwim)
+(global-set-key (kbd "C-M-z")   #'delete-pair)
 
-;; Toggle Evil mode globally (C-c v).  Use `evil-local-mode' for one buffer.
-(global-set-key (kbd "C-c v") #'evil-mode)
+;; Move current line/region up or down
+(use-package move-text
+  :ensure t
+  :bind (("M-p" . move-text-up)
+         ("M-n" . move-text-down)))
 
-;; Evil collection for better vim bindings everywhere
-(use-package evil-collection
-  :after evil
-  :demand t
-  :config
-  (evil-collection-init))
+;; Multiple cursors
+(use-package multiple-cursors
+  :ensure t
+  :bind (("C-S-c C-S-c" . mc/edit-lines)
+         ("C->"         . mc/mark-next-like-this)
+         ("C-<"         . mc/mark-previous-like-this)
+         ("C-c C-<"     . mc/mark-all-like-this)
+         ("C-\""        . mc/skip-to-next-like-this)
+         ("C-:"         . mc/skip-to-previous-like-this)))
 #+end_src
 
 * Completion Framework
 ** FIDO + ICOMPLETE
 #+begin_src emacs-lisp
-  ;;; │ FIDO + ICOMPLETE
-  (use-package icomplete
-    :ensure nil
+(use-package icomplete
+  :ensure nil
   :bind (:map icomplete-fido-mode-map
               ("RET"        . icomplete-fido-ret)
               ("<S-return>" . icomplete-fido-exit))
   :hook
-    (after-init-hook . (lambda ()
-                         (fido-vertical-mode 1)))
-    :config
-    (setq icomplete-delay-completions-threshold 0
-          icomplete-compute-delay               0
-          icomplete-show-matches-on-no-input    t
-          icomplete-hide-common-prefix          nil
-          icomplete-prospects-height            10
-          icomplete-max-delay-chars             0
-          icomplete-scroll                      t))
+  (after-init-hook . (lambda () (fido-vertical-mode 1)))
+  :config
+  (setq icomplete-delay-completions-threshold 0
+        icomplete-compute-delay               0
+        icomplete-show-matches-on-no-input    t
+        icomplete-hide-common-prefix          nil
+        icomplete-prospects-height            10
+        icomplete-max-delay-chars             0
+        icomplete-scroll                      t))
 #+end_src
 ** Consult - Enhanced search/navigation
 #+begin_src emacs-lisp
@@ -398,15 +379,7 @@ pip install debugpy
   (define-key dired-mode-map (kbd "M-s /") #'consult-ripgrep)
   (define-key dired-mode-map (kbd "M-s g") #'consult-grep)
   (define-key dired-mode-map (kbd "M-s b") #'consult-buffer)
-  (define-key dired-mode-map (kbd "M-s r") #'consult-recent-file)
-  (when (featurep 'evil)
-    (dolist (state '(normal visual motion insert))
-      (evil-define-key state dired-mode-map
-        (kbd "M-s s") #'consult-find
-        (kbd "M-s /") #'consult-ripgrep
-        (kbd "M-s g") #'consult-grep
-        (kbd "M-s b") #'consult-buffer
-        (kbd "M-s r") #'consult-recent-file))))
+  (define-key dired-mode-map (kbd "M-s r") #'consult-recent-file))
 
 (with-eval-after-load 'dired
   (my/dired-setup-consult-keys)
@@ -495,86 +468,6 @@ otherwise."
   (setq cape-dabbrev-check-other-buffers t   ;; scan all buffers for words
         cape-dabbrev-min-length          3)) ;; only complete words 3+ chars
 #+end_src
-* Compilation
-#+begin_src emacs-lisp
-;; GCC/Clang errors (file:line:col: error:) are already covered by the
-;; built-in `gnu' entry in compilation-error-regexp-alist - no custom
-;; regexp needed.
-
-;; Compilation keybindings - Global
-(global-set-key (kbd "C-5") #'compile)
-(global-set-key (kbd "C-4") #'recompile)
-
-(with-eval-after-load 'evil
-  (dolist (state '(normal insert visual motion emacs))
-    (evil-define-key state 'global
-      (kbd "C-5") #'compile
-      (kbd "C-4") #'recompile)))
-
-;; consult-compile-errors: consult interface over the *compilation* buffer.
-;; Works without LSP - reads errors parsed by compilation-error-regexp-alist.
-;; Use instead of (or alongside) consult-flymake.
-(defun my/consult-compile-errors ()
-  "Browse compilation errors with consult.
-Reads from the current *compilation* buffer using the same error
-parser as `next-error' / `M-g n'."
-  (interactive)
-  (require 'consult)
-  (require 'compile)
-  (let ((buf (get-buffer "*compilation*")))
-    (unless buf
-      (user-error "No *compilation* buffer found - run compile first"))
-    (let ((candidates '())
-          (loc-table (make-hash-table :test 'equal)))
-      (with-current-buffer buf
-        (goto-char (point-min))
-        (while (not (eobp))
-          (and-let* ((msg (get-text-property (point) 'compilation-message)))
-            (let* ((loc  (compilation--message->loc msg))
-                   (type (compilation--message->type msg))
-                   (file (caar (compilation--loc->file-struct loc)))
-                   (line (compilation--loc->line loc))
-                   (col  (compilation--loc->col loc))
-                   (text (string-trim
-                          (buffer-substring-no-properties
-                           (line-beginning-position)
-                           (line-end-position))))
-                   (face (pcase type
-                           (0 'compilation-info)
-                           (1 'compilation-warning)
-                           (_ 'compilation-error)))
-                   (display (format "%-30s %4s:%-4s  %s"
-                                    (propertize (or file "?") 'face 'consult-file)
-                                    (propertize (number-to-string (or line 0)) 'face 'consult-line-number)
-                                    (propertize (number-to-string (or col 0))  'face 'shadow)
-                                    (propertize text 'face face))))
-              (puthash display (list file line col) loc-table)
-              (push display candidates)))
-          (forward-line 1)))
-      (if (null candidates)
-          (message "No errors found in *compilation* buffer")
-        (let* ((chosen (consult--read
-                        (nreverse candidates)
-                        :prompt "Compile error: "
-                        :category 'consult-compile-error
-                        :sort nil
-                        :require-match t))
-               (loc  (gethash chosen loc-table))
-               (file (nth 0 loc))
-               (line (nth 1 loc))
-               (col  (nth 2 loc)))
-          (when (and file (file-exists-p file))
-            (find-file file)
-            (goto-char (point-min))
-            (forward-line (1- line))
-            (when col (move-to-column col))
-            (recenter)))))))
-
-(global-set-key (kbd "C-c e") #'my/consult-compile-errors)
-(with-eval-after-load 'evil
-  (dolist (state '(normal insert visual motion emacs))
-    (evil-define-key state 'global (kbd "C-c e") #'my/consult-compile-errors)))
-#+end_src
 
 * Project Management
 #+begin_src emacs-lisp
@@ -610,11 +503,64 @@ Works like Projectile's bottom-up detection - no git required."
   :bind (:map dired-mode-map
          ("." . dired-hide-dotfiles-mode))
   :config
-  (setq dired-kill-when-opening-new-dired-buffer t)
-  (with-eval-after-load 'evil
-    (evil-define-key 'normal dired-mode-map
-      (kbd ".") #'dired-hide-dotfiles-mode)))
+  (setq dired-kill-when-opening-new-dired-buffer t))
 
+;;; Dired: keep slow/remote buffers, auto-kill fast local ones on navigation
+(defgroup my-dired nil
+  "Personal Dired tweaks."
+  :group 'dired)
+
+(defcustom my-dired-open-slow-seconds 4.0
+  "If a LOCAL Dired listing takes longer than this many seconds, keep that
+buffer when navigating instead of auto-killing it."
+  :type 'number
+  :group 'my-dired)
+
+(defvar-local my-dired-readin-start-time nil
+  "Time (`current-time') when this Dired buffer started listing its directory.")
+
+(defun my-dired-record-readin-start-time (&rest _args)
+  "Record when Dired starts reading/inserting the directory listing."
+  (setq my-dired-readin-start-time (current-time)))
+
+(defun my-dired-set-kill-flag-based-on-open-time-and-remote ()
+  "Set `dired-kill-when-opening-new-dired-buffer' for this buffer.
+Remote/TRAMP buffers are always kept.  Local buffers are kept when their
+listing took longer than `my-dired-open-slow-seconds'."
+  (setq-local dired-kill-when-opening-new-dired-buffer
+              (cond
+               ((file-remote-p default-directory) nil)
+               (my-dired-readin-start-time
+                (<= (float-time (time-subtract (current-time)
+                                               my-dired-readin-start-time))
+                    my-dired-open-slow-seconds))
+               (t nil))))
+
+(with-eval-after-load 'dired
+  (setq dired-kill-when-opening-new-dired-buffer nil)
+  (add-hook 'dired-before-readin-hook #'my-dired-record-readin-start-time)
+  (add-hook 'dired-after-readin-hook
+            #'my-dired-set-kill-flag-based-on-open-time-and-remote))
+
+#+end_src
+
+* Version Control
+#+begin_src emacs-lisp
+(use-package magit
+  :defer t
+  :bind ("C-x g" . magit-status)
+  :custom
+  (magit-diff-refine-hunk 'all))
+
+(use-package diff-hl
+  :defer t
+  :hook ((prog-mode          . diff-hl-mode)
+         (org-mode           . diff-hl-mode)
+         (dired-mode         . diff-hl-dired-mode)
+         (magit-post-refresh . diff-hl-magit-post-refresh))
+  :custom
+  ;; diff-hl can be noisy/slow over TRAMP; skip it on remote buffers.
+  (diff-hl-disable-on-remote t))
 #+end_src
 
 * Tree-sitter
@@ -661,18 +607,22 @@ Works like Projectile's bottom-up detection - no git required."
          (c-mode          . (lambda () (setq-local devdocs-current-docs '("c"))))
          (c++-mode        . (lambda () (setq-local devdocs-current-docs '("cpp"))))
          (ruby-mode       . (lambda () (setq-local devdocs-current-docs '("ruby~3.3")))))
-  :bind (("M-s d d" . devdocs-lookup)
-         ("M-s d i" . devdocs-install)
-         ("M-s d s" . devdocs-search))
-  :config
+  :init
+  ;; Look up the symbol at point with DevDocs, falling back to the man page.
+  ;; Replaces Evil's `K' with the non-Evil binding `M-s d l'.
   (defun my/devdocs-or-fallback ()
-    "Try devdocs-lookup, fall back to evil's default K."
+    "Try devdocs-lookup, fall back to the man page for the symbol at point."
     (interactive)
-    (if devdocs-current-docs
-        (devdocs-lookup nil (thing-at-point 'symbol t))
-      (evil-lookup)))
-  (with-eval-after-load 'evil
-    (evil-define-key 'normal 'global (kbd "K") #'my/devdocs-or-fallback)))
+    (let ((symbol (thing-at-point 'symbol t)))
+      (cond
+       ((and (bound-and-true-p devdocs-current-docs) symbol)
+        (devdocs-lookup nil symbol))
+       (symbol (man symbol))
+       (t (user-error "No symbol at point")))))
+  :bind (("M-s d d" . devdocs-lookup)
+         ("M-s d l" . my/devdocs-or-fallback)
+         ("M-s d i" . devdocs-install)
+         ("M-s d s" . devdocs-search)))
 
 (defvar woman-topic-history nil
   "History for WoMan topic prompts.")
@@ -733,16 +683,9 @@ Works like Projectile's bottom-up detection - no git required."
     (global-set-key (kbd "C-M-p") #'dumb-jump-back)
     (global-set-key (kbd "C-M-j") #'dumb-jump-go-prompt)
 
-    (with-eval-after-load 'evil
-      (dolist (state '(normal insert visual motion emacs))
-        (evil-define-key state 'global
-          (kbd "M-.") #'xref-find-definitions
-          (kbd "M-,") #'xref-go-back)))
-
-    ;; NOTE: evil's C-o (back) / C-i (forward) are more reliable than M-,
-    ;; for navigating after dumb-jump since they use evil's own jump list
-    ;; instead of xref's marker ring.
-    )
+    ;; xref navigation - M-. / M-, (vanilla Emacs defaults, set explicitly)
+    (global-set-key (kbd "M-.")   #'xref-find-definitions)
+    (global-set-key (kbd "M-,")   #'xref-go-back))
 
 ;; Direct search in /usr/include
 (defun my/get-system-search-paths ()
@@ -912,6 +855,79 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
   :ensure t
   :after yasnippet)                             ;; Provides the actual "library" of snippets
 #+end_src
+
+* Compilation
+#+begin_src emacs-lisp
+;; GCC/Clang errors (file:line:col: error:) are already covered by the
+;; built-in `gnu' entry in compilation-error-regexp-alist - no custom
+;; regexp needed.
+
+;; Compilation keybindings - Global
+(global-set-key (kbd "C-5") #'compile)
+(global-set-key (kbd "C-4") #'recompile)
+
+;; consult-compile-errors: consult interface over the *compilation* buffer.
+;; Works without LSP - reads errors parsed by compilation-error-regexp-alist.
+;; Use instead of (or alongside) consult-flymake.
+(defun my/consult-compile-errors ()
+  "Browse compilation errors with consult.
+Reads from the current *compilation* buffer using the same error
+parser as `next-error' / `M-g n'."
+  (interactive)
+  (require 'consult)
+  (require 'compile)
+  (let ((buf (get-buffer "*compilation*")))
+    (unless buf
+      (user-error "No *compilation* buffer found - run compile first"))
+    (let ((candidates '())
+          (loc-table (make-hash-table :test 'equal)))
+      (with-current-buffer buf
+        (goto-char (point-min))
+        (while (not (eobp))
+          (and-let* ((msg (get-text-property (point) 'compilation-message)))
+            (let* ((loc  (compilation--message->loc msg))
+                   (type (compilation--message->type msg))
+                   (file (caar (compilation--loc->file-struct loc)))
+                   (line (compilation--loc->line loc))
+                   (col  (compilation--loc->col loc))
+                   (text (string-trim
+                          (buffer-substring-no-properties
+                           (line-beginning-position)
+                           (line-end-position))))
+                   (face (pcase type
+                           (0 'compilation-info)
+                           (1 'compilation-warning)
+                           (_ 'compilation-error)))
+                   (display (format "%-30s %4s:%-4s  %s"
+                                    (propertize (or file "?") 'face 'consult-file)
+                                    (propertize (number-to-string (or line 0)) 'face 'consult-line-number)
+                                    (propertize (number-to-string (or col 0))  'face 'shadow)
+                                    (propertize text 'face face))))
+              (puthash display (list file line col) loc-table)
+              (push display candidates)))
+          (forward-line 1)))
+      (if (null candidates)
+          (message "No errors found in *compilation* buffer")
+        (let* ((chosen (consult--read
+                        (nreverse candidates)
+                        :prompt "Compile error: "
+                        :category 'consult-compile-error
+                        :sort nil
+                        :require-match t))
+               (loc  (gethash chosen loc-table))
+               (file (nth 0 loc))
+               (line (nth 1 loc))
+               (col  (nth 2 loc)))
+          (when (and file (file-exists-p file))
+            (find-file file)
+            (goto-char (point-min))
+            (forward-line (1- line))
+            (when col (move-to-column col))
+            (recenter)))))))
+
+(global-set-key (kbd "C-c e") #'my/consult-compile-errors)
+#+end_src
+
 * Debugging with Dape
 #+begin_src emacs-lisp
 (use-package dape
@@ -1087,11 +1103,50 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
 ;; Ghostel - terminal emulator powered by libghostty. The native module is
 ;; downloaded automatically on first use; no toolchain or build step needed.
 ;; See https://github.com/dakra/ghostel
+;; Declared special (with ghostel's default) here so the `let' below is a
+;; dynamic binding even before the ghostel package has been loaded.
+(defvar ghostel-buffer-name "*ghostel*")
+
+(defun my/ghostel-name-for-buffer ()
+  "Return a Ghostel buffer name derived from the current buffer's directory."
+  (let* ((dir    (directory-file-name default-directory))
+         (remote (file-remote-p dir)))
+    (format "*ghostel: %s*"
+            (if remote
+                (concat (string-trim remote "/" ":") ":"
+                        (abbreviate-file-name (file-local-name dir)))
+              (abbreviate-file-name dir)))))
+
+(defun my/ghostel-here ()
+  "Open a Ghostel terminal for the current directory, reusing one if present.
+Unlike `ghostel', which keys buffers by name alone, this reuses a terminal
+whose `default-directory' matches, so buffers in the same directory share
+one session.  The buffer name is derived from the directory, plus the TRAMP
+host for remote sessions."
+  (interactive)
+  (require 'ghostel)  ; ensure `ghostel-buffer-name' is special before let-binding
+  (let* ((dir (expand-file-name default-directory))
+         (existing
+          (seq-find (lambda (b)
+                      (with-current-buffer b
+                        (and (derived-mode-p 'ghostel-mode)
+                             (equal (expand-file-name default-directory) dir))))
+                    (buffer-list))))
+    (if existing
+        (pop-to-buffer existing)
+      (let ((ghostel-buffer-name (my/ghostel-name-for-buffer))
+            (default-directory   dir))
+        (ghostel)))))
+
+(global-set-key (kbd "C-c t") #'my/ghostel-here)
+
 (use-package ghostel
   :ensure t
-  :bind (("C-c t" . ghostel)
-         :map ghostel-semi-char-mode-map
-         ("C-s" . consult-line))
+  :bind (:map ghostel-semi-char-mode-map
+         ("C-s" . consult-line)
+         ;; Keep C-p/C-n shell history: override the global move-text M-p/M-n
+         ("M-p" . (lambda () (interactive) (ghostel-send-key "p" "ctrl")))
+         ("M-n" . (lambda () (interactive) (ghostel-send-key "n" "ctrl"))))
   :config
   ;; Pick an existing Ghostel buffer or start a new terminal.
   (defun my/ghostel-switch ()
@@ -1115,12 +1170,6 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
         (switch-to-buffer choice))))
   (global-set-key (kbd "C-c T") #'my/ghostel-switch))
 
-;; Evil integration for Ghostel terminals (ESC routing, normal-state jumps).
-(use-package evil-ghostel
-  :ensure t
-  :after (ghostel evil)
-  :hook (ghostel-mode . evil-ghostel-mode))
-
 ;; Consult picker for Ghostel terminals (live preview, create-on-miss).
 (use-package consult-ghostel
   :ensure t
@@ -1130,27 +1179,115 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
          ("m" . consult-ghostel-project)))
 #+end_src
 
-* Visual Enhancements
+* Remote Access (TRAMP)
+** Behaviour & Performance Tweaks
 #+begin_src emacs-lisp
-(use-package rainbow-delimiters
-  :defer t
-  :hook (prog-mode . rainbow-delimiters-mode))
+;; Keep TRAMP from scattering autosave files on remote hosts.
+(setq tramp-auto-save-directory "/tmp")
+
+;; TRAMP performance.  ControlMaster itself is configured in ~/.ssh/config,
+;; so TRAMP must not inject its own -o ControlMaster args.
+(with-eval-after-load 'tramp
+  (setq remote-file-name-inhibit-locks t
+        remote-file-name-inhibit-cache 10
+        remote-file-name-inhibit-auto-save-visited t
+        tramp-use-scp-direct-remote-copying t
+        tramp-connection-timeout 60
+        tramp-use-ssh-controlmaster-options nil))
+
+;; `M-x compile' disables SSH ControlMaster by default; keep the master alive.
+(with-eval-after-load 'compile
+  (remove-hook 'compilation-mode-hook
+               #'tramp-compile-disable-ssh-controlmaster-options))
 #+end_src
 
-* Version Control
-#+begin_src emacs-lisp
-(use-package magit
-  :defer t
-  :bind ("C-x g" . magit-status)
-  :custom
-  (magit-diff-refine-hunk 'all))
+** TRAMP-RPC
+[[https://github.com/ArthurHeymans/emacs-tramp-rpc][TRAMP-RPC]] replaces
+TRAMP's shell-command parsing with a binary MessagePack-RPC server on the
+remote host (2-38x faster file and VC operations). It requires Emacs 30.1+,
+TRAMP 2.8.1.4+, and a Linux or macOS remote. The Rust server is
+downloaded/built and deployed automatically on first connect. Use
+~=/rpc:user@host:/path=~ instead of ~=/ssh:user@host:/path=~.
 
-(use-package diff-hl
-  :defer t
-  :hook ((prog-mode          . diff-hl-mode)
-         (org-mode           . diff-hl-mode)
-         (dired-mode         . diff-hl-dired-mode)
-         (magit-post-refresh . diff-hl-magit-post-refresh)))
+#+begin_src emacs-lisp
+(use-package tramp-rpc
+  :after tramp
+  :vc (:url "https://github.com/ArthurHeymans/emacs-tramp-rpc"
+       :rev :newest
+       :lisp-dir "lisp")
+  :custom
+  (tramp-rpc-deploy-auto-deploy t)
+  (tramp-rpc-deploy-local-cache-directory
+   (expand-file-name "cache/tramp-rpc" user-emacs-directory)))
+
+;; Uncomment to use the `rpc' method for every TRAMP connection by default.
+;; (setq tramp-default-method "rpc")
+#+end_src
+
+* WSL (Windows Subsystem for Linux)
+#+begin_src emacs-lisp
+(defun my/wsl-p ()
+  "Return non-nil when running under Windows Subsystem for Linux."
+  (and (eq system-type 'gnu/linux)
+       (file-readable-p "/proc/version")
+       (with-temp-buffer
+         (insert-file-contents "/proc/version")
+         (string-match-p "microsoft" (downcase (buffer-string))))))
+
+(when (my/wsl-p)
+  ;; Clipboard / primary-selection integration with the Windows host.
+  (setq select-active-regions nil
+        select-enable-clipboard t
+        select-enable-primary nil
+        interprogram-cut-function #'gui-select-text)
+
+  ;; Pick a server from a CSV inventory and open it over TRAMP-RPC.
+  ;; Adjust the path and usernames for your environment.
+  (defvar my/tramp-from-csv-file (expand-file-name "server-inventory.csv" "~")
+    "CSV inventory (name,host) used by `my/tramp-from-csv'.")
+
+  (defun my/tramp-from-csv (&optional search-term)
+    "Prompt for a server from `my/tramp-from-csv-file' and open it with TRAMP-RPC.
+Opens /rpc:USER@HOST:~/ in Dired.  SEARCH-TERM, when non-nil, is used
+directly instead of prompting."
+    (interactive)
+    (require 'consult)
+    (let* ((csv-file my/tramp-from-csv-file)
+           (cands nil)
+           (picked nil))
+      (when (file-readable-p csv-file)
+        (setq cands
+              (with-temp-buffer
+                (insert-file-contents csv-file)
+                (let ((lines (split-string (buffer-string) "\n" t))
+                      (out nil))
+                  (dolist (ln (cdr lines) (nreverse out))
+                    (let* ((cols (split-string ln ","))
+                           (f1 (string-trim (or (nth 0 cols) "")))
+                           (f2 (string-trim (or (nth 1 cols) ""))))
+                      (push (format "%s,%s" f2 f1) out)))))))
+      (cond
+       ((and (stringp search-term) (not (string-empty-p search-term)))
+        (setq picked search-term))
+       ((null cands)
+        (message "No candidates (CSV missing/unreadable/empty): %s" csv-file)
+        (setq picked nil))
+       (t
+        (setq picked
+              (condition-case nil
+                  (consult--read cands :prompt "Server: " :require-match t :sort nil)
+                (quit nil)))))
+      (when (and picked (not (string-empty-p picked)))
+        (let* ((server (let* ((before-comma (car (split-string picked ",")))
+                              (s (string-trim before-comma)))
+                         (replace-regexp-in-string "\\`\"\\|\"\\'" "" s)))
+               (user (if (string-match-p "splunk" (downcase picked))
+                         "svc-splunk-account"
+                       "your-username")))
+          (when (not (string-empty-p server))
+            (dired (format "/rpc:%s@%s:~/" user server)))))))
+
+  (global-set-key (kbd "C-S-t") #'my/tramp-from-csv))
 #+end_src
 
 * Built-in Package Improvements
@@ -1176,7 +1313,8 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
 (use-package python
   :ensure nil
   :config
-  (setq python-eldoc-get-doc-strategy 'python-eldoc-format-all-docs))
+  (setq python-eldoc-get-doc-strategy 'python-eldoc-format-all-docs
+        python-shell-virtualenv-root (expand-file-name "~/pyenv")))
 
 ;; 3. Go: Third-party bridge for signatures
 (use-package go-eldoc
@@ -1224,13 +1362,32 @@ Pair with M-s M-. to search+copy the word under point."
   (proced-filter               'user)   ; show only your processes; change with 'f'
   :hook
   (proced-mode . (lambda () (proced-toggle-auto-update 1))))
-
-;;; tramp
-;;; http://stackoverflow.com/questions/13794433/how-to-disable-autosave-for-tramp-buffers-in-emacs
-(setq tramp-auto-save-directory "/tmp")
 #+end_src
 
 * Custom Functions
+** Text Editing Utilities
+*** Select Text in Quote
+#+begin_src emacs-lisp
+(defun xah-select-text-in-quote ()
+  "Select text between the nearest left and right delimiters.
+Delimiters here includes QUOTATION MARK, GRAVE ACCENT, and most commonly used Unicode matching brackets.
+Does not include APOSTROPHE.
+This command ignores nesting. For example, if text is
+「(a(b)c▮)」
+the selected char is 「c」, not 「a(b)c」.
+
+URL `http://xahlee.info/emacs/emacs/emacs_select_quote_text.html'
+Created: 2020-11-24
+Version: 2026-07-09"
+  (interactive)
+  (let ((xskipChars "^`\"“”()[]{}<>＜＞（）［］｛｝⦅⦆〚〛⦃⦄‹›«»「」〈〉《》【】〔〕⦗⦘『』〖〗〘〙｢｣⟦⟧⟨⟩⟪⟫⟮⟯⟬⟭⌈⌉⌊⌋⦇⦈⦉⦊❛❜❝❞❨❩❪❫❴❵❬❭❮❯❰❱"))
+    (skip-chars-backward xskipChars)
+    (push-mark (point) t t)
+    (skip-chars-forward xskipChars)))
+
+(global-set-key (kbd "M-'") #'xah-select-text-in-quote)
+#+end_src
+
 ** Project Navigation and Management
 *** Directory Candidates Helper
 #+begin_src emacs-lisp
@@ -1351,13 +1508,9 @@ Opens selected directory in dired and registers it with project.el."
 (global-set-key (kbd "C-c p s") #'my/consult-sessionizer)
 (global-set-key (kbd "C-c p n") #'my/create-new-project)
 (global-set-key (kbd "C-c p r") #'my/open-github-pr)
-
-(with-eval-after-load 'evil
-  (dolist (state '(normal insert visual motion emacs))
-    (evil-define-key state 'global
-      (kbd "C-S-f") #'my/consult-sessionizer
-      (kbd "C-S-n") #'my/create-new-project
-      (kbd "C-S-p") #'my/open-github-pr)))
+(global-set-key (kbd "C-S-f")   #'my/consult-sessionizer)
+(global-set-key (kbd "C-S-n")   #'my/create-new-project)
+(global-set-key (kbd "C-S-p")   #'my/open-github-pr)
 #+end_src
 
 * Performance Optimizations

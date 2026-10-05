@@ -10,7 +10,7 @@
 ;; Menudo is a dark theme featuring:
 ;; - Pure black backgrounds for code and line numbers
 ;; - Bright gray text for readability
-;; - Gold cursor with Evil mode cursor color support
+;; - Gold cursor
 ;; - Gold mode-line with bright text
 ;; - Blue and gold highlights for completion
 ;; - Red parenthesis matching
@@ -290,17 +290,6 @@
 
 (when (or (display-graphic-p) (daemonp))
   (enable-theme 'menudo))
-
-;;=========================================================================
-;; EVIL CURSOR COLORS
-;;=========================================================================
-
-(when (boundp 'evil-normal-state-cursor)
-  (setq evil-normal-state-cursor   `(,menudo-cursor-color box)
-        evil-insert-state-cursor   `(,menudo-cursor-color (bar . 6))
-        evil-visual-state-cursor   `(,menudo-cursor-color (bar . 12))
-        evil-replace-state-cursor  `(,menudo-replace-cursor-color box)
-        evil-operator-state-cursor `(,menudo-cursor-color hollow)))
 
 ;;=========================================================================
 ;; HL-LINE & CURSOR SETUP
