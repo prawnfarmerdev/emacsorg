@@ -134,14 +134,20 @@ pip install debugpy
 (load-file (expand-file-name "config/theme.el" user-emacs-directory))
 
 ;; Set font - Inconsolata Nerd Font on Windows, InconsolataGo Nerd Font Mono
-;; elsewhere.
-(let ((windows-p (eq system-type 'windows-nt)))
+;; elsewhere. Use the larger 200pt size on Windows and WSL; 140pt on native
+;; Linux.
+(let ((windows-p (eq system-type 'windows-nt))
+      (wsl-p (and (eq system-type 'gnu/linux)
+                  (file-readable-p "/proc/version")
+                  (with-temp-buffer
+                    (insert-file-contents "/proc/version")
+                    (string-match-p "microsoft" (downcase (buffer-string)))))))
   (set-face-attribute 'default nil
                       :font (if windows-p
                                 "Inconsolata Nerd Font"
                               "InconsolataGo Nerd Font Mono")
                       :weight (if windows-p 'regular 'semilight)
-                      :height (if windows-p 200 140)))
+                      :height (if (or windows-p wsl-p) 200 140)))
 
 (set-frame-parameter nil 'alpha-background 95)
 #+end_src
