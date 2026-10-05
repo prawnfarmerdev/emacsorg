@@ -94,20 +94,17 @@ pip install debugpy
 ;; Package setup
 (require 'package)
 
+;; Use the d12frosted elpa-mirror (reachable when the official hosts are blocked).
 (setq package-archives
-      '(("melpa"        . "https://www.mirrorservice.org/sites/melpa.org/packages/")
-        ("melpa-stable" . "https://www.mirrorservice.org/sites/stable.melpa.org/packages/")
-        ("gnu"          . "https://elpa.gnu.org/packages/")
-        ("nongnu"       . "https://elpa.nongnu.org/nongnu/")))
+      '(("melpa"        . "https://raw.githubusercontent.com/d12frosted/elpa-mirror/master/melpa/")
+        ("melpa-stable" . "https://raw.githubusercontent.com/d12frosted/elpa-mirror/master/stable-melpa/")
+        ("gnu"          . "https://raw.githubusercontent.com/d12frosted/elpa-mirror/master/gnu/")
+        ("nongnu"       . "https://raw.githubusercontent.com/d12frosted/elpa-mirror/master/nongnu/")))
 
-(condition-case nil
+(condition-case err
     (package-refresh-contents)
-  (error
-   (message "Falling back to MELPA mirror...")
-   (setq package-archives
-         '(("melpa"        . "https://melpa.org/packages/")
-           ("melpa-stable" . "https://stable.melpa.org/packages/")))
-   (package-refresh-contents)))
+  (error (message "package-refresh-contents failed: %s"
+                  (error-message-string err))))
 
 (package-initialize)
 
