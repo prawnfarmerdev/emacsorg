@@ -1151,6 +1151,9 @@ host for remote sessions."
          ("M-p" . (lambda () (interactive) (ghostel-send-key "p" "ctrl")))
          ("M-n" . (lambda () (interactive) (ghostel-send-key "n" "ctrl"))))
   :config
+  ;; Let C-<TAB> (and friends) reach Emacs instead of the terminal.
+  (add-to-list 'ghostel-keymap-exceptions "C-<tab>")
+  (ghostel--rebuild-semi-char-keymap)
   ;; Pick an existing Ghostel buffer or start a new terminal.
   (defun my/ghostel-switch ()
     "Select a Ghostel buffer with consult, or create a new terminal."
