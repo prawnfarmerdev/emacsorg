@@ -133,6 +133,14 @@ pip install debugpy
 ;; Load theme
 (load-file (expand-file-name "config/theme.el" user-emacs-directory))
 
+;; Weyland-Yutani theme (the MELPA package, as used by cryptstopher/dotfiles).
+;; Replaces the Menudo theme that config/theme.el enables.
+(use-package weyland-yutani-theme
+  :ensure t
+  :config
+  (disable-theme 'menudo)
+  (load-theme 'weyland-yutani t))
+
 ;; Set font. Prefer the platform's intended Inconsolata Nerd Font variant, but
 ;; fall back to whichever variant is actually installed so a missing font never
 ;; aborts startup. Windows and WSL get the larger 200pt size; native Linux 140pt.
