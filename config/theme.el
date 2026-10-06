@@ -22,6 +22,9 @@
 
 ;;; Code:
 
+;; Menudo temporarily disabled while trying out Weyland-Yutani. Remove the
+;; `(when nil ...)' wrapper (and the `provide-theme' below) to re-enable it.
+(when nil
 (deftheme menudo "Menudo theme with black backgrounds, gray text, and blue highlights.")
 
 (defvar menudo-cursor-color         "#b58900")
@@ -280,6 +283,7 @@
    ;; TOOLTIP
    ;;=========================================================================
    `(tooltip ((t (:background ,menudo-brown :foreground ,menudo-gold))))))
+) ; end menudo (temporarily disabled)
 
 ;;=========================================================================
 ;; WEYLAND-YUTANI THEME
@@ -544,7 +548,7 @@
   (add-to-list 'custom-theme-load-path
                (file-name-as-directory (file-name-directory load-file-name))))
 
-(provide-theme 'menudo)
+;; (provide-theme 'menudo)  ; menudo temporarily disabled
 (provide-theme 'weyland-yutani)
 
 ;; Active theme: Weyland-Yutani. To go back to Menudo, change the symbol below
