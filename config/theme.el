@@ -16,9 +16,6 @@
 ;; - Red parenthesis matching
 ;; - Comprehensive org-mode support
 ;; - Rainbow delimiters for code
-;;
-;; This file also provides `weyland-yutani', an amber-on-near-black theme
-;; inspired by the Weyland-Yutani Corporation from the Alien films.
 
 ;;; Code:
 
@@ -282,261 +279,6 @@
    `(tooltip ((t (:background ,menudo-brown :foreground ,menudo-gold))))))
 
 ;;=========================================================================
-;; WEYLAND-YUTANI THEME
-;;=========================================================================
-(deftheme weyland-yutani
-  "Weyland-Yutani theme - amber on near-black. Building better worlds.")
-
-(let* (;; Neutrals
-       (wy-fg              "#c9c4b4")
-       (wy-bg              "#0b0b0d")
-       (wy-bg-alt          "#161619")
-       (wy-hl-line         "#1f1f26")
-       (wy-gray-dark       "#3a3a40")
-       (wy-gray            "#6b6b73")
-       (wy-gray-light      "#9a958a")
-
-       ;; Ambers / Golds (corporate amber)
-       (wy-amber           "#ffb000")
-       (wy-amber-bright    "#ffc850")
-       (wy-amber-dim       "#b37700")
-       (wy-gold            "#e6a817")
-       (wy-gold-dark       "#9f7200")
-
-       ;; Oranges
-       (wy-orange          "#e08a2e")
-       (wy-orange-burnt    "#d1601a")
-       (wy-orange-vivid    "#ff7a1a")
-
-       ;; Reds
-       (wy-red             "#d64541")
-       (wy-red-dusty       "#e07a7a")
-
-       ;; Blues
-       (wy-blue            "#5a8fbf")
-
-       ;; Greens (Nostromo terminal)
-       (wy-green           "#4ec07a")
-       (wy-green-dark      "#12381f")
-       (wy-green-pepper    "#1f4d33")
-
-       ;; Cyans / Purples / Browns
-       (wy-cyan            "#3fb6b6")
-       (wy-lavender        "#a98bd6")
-       (wy-teal            "#007a7a")
-       (wy-brown           "#b08a52")
-
-       ;; Mode line
-       (wy-modeline-fg     "#0b0b0d")
-       (wy-modeline-bg     "#ffb000")
-       (wy-modeline-border "#161619"))
-
-  (custom-theme-set-faces
-   'weyland-yutani
-
-   ;;=========================================================================
-   ;; UI
-   ;;=========================================================================
-   `(default           ((t (:background ,wy-bg              :foreground ,wy-fg))))
-   `(cursor            ((t (:background ,wy-amber))))
-   `(region            ((t (:background ,wy-green-dark))))
-   `(highlight         ((t (:background ,wy-green-dark))))
-   `(fringe            ((t (:background ,wy-bg))))
-   `(vertical-border   ((t (:foreground ,wy-bg))))
-   `(shadow            ((t (:foreground ,wy-gray-dark       :background ,wy-bg))))
-   `(minibuffer-prompt ((t (:foreground ,wy-amber            :weight bold))))
-   `(hl-line           ((t (:background ,wy-hl-line))))
-
-   ;;=========================================================================
-   ;; LINE NUMBERS
-   ;;=========================================================================
-   `(line-number              ((t (:foreground ,wy-gray-dark :background ,wy-bg))))
-   `(line-number-current-line ((t (:foreground ,wy-amber-dim :background ,wy-bg))))
-
-   ;;=========================================================================
-   ;; FONT LOCK
-   ;;=========================================================================
-   `(font-lock-comment-face       ((t (:foreground ,wy-gray))))
-   `(font-lock-keyword-face       ((t (:foreground ,wy-amber))))
-   `(font-lock-string-face        ((t (:foreground ,wy-orange))))
-   `(font-lock-constant-face      ((t (:foreground ,wy-amber-bright))))
-   `(font-lock-builtin-face       ((t (:foreground ,wy-red-dusty))))
-   `(font-lock-preprocessor-face  ((t (:foreground ,wy-red-dusty))))
-   `(font-lock-type-face          ((t (:foreground ,wy-gold))))
-   `(font-lock-function-name-face ((t (:foreground ,wy-orange-burnt))))
-   `(font-lock-variable-name-face ((t (:foreground ,wy-fg))))
-   `(font-lock-variable-use-face  ((t (:foreground ,wy-lavender))))
-   `(font-lock-warning-face       ((t (:foreground ,wy-red      :weight bold))))
-   `(font-lock-doc-face           ((t (:foreground ,wy-green))))
-
-   ;;=========================================================================
-   ;; MODE LINE
-   ;;=========================================================================
-   `(mode-line
-     ((t (:background ,wy-modeline-bg
-          :foreground ,wy-modeline-fg
-          :box (:line-width 1 :color ,wy-modeline-border :style nil)))))
-   `(mode-line-inactive
-     ((t (:background ,wy-gray
-          :foreground ,wy-fg
-          :box (:line-width 1 :color ,wy-modeline-border :style nil)))))
-   `(mode-line-buffer-id ((t (:foreground ,wy-bg :weight bold))))
-
-   ;;=========================================================================
-   ;; GIT / VC
-   ;;=========================================================================
-   `(magit-branch-local   ((t (:foreground ,wy-green))))
-   `(magit-branch-remote  ((t (:foreground ,wy-blue))))
-   `(magit-branch-current ((t (:foreground ,wy-amber   :weight bold))))
-   `(vc-mode              ((t (:foreground ,wy-amber))))
-   `(diff-hl-change       ((t (:background ,wy-blue   :foreground ,wy-blue))))
-   `(diff-hl-insert       ((t (:background ,wy-green  :foreground ,wy-green))))
-   `(diff-hl-delete       ((t (:background ,wy-red    :foreground ,wy-red))))
-
-   ;;=========================================================================
-   ;; SEARCH & MATCHING
-   ;;=========================================================================
-   `(match          ((t (:background ,wy-amber-bright  :foreground ,wy-bg))))
-   `(isearch        ((t (:background ,wy-orange-vivid  :foreground ,wy-bg))))
-   `(lazy-highlight ((t (:background ,wy-amber         :foreground ,wy-bg))))
-   `(ido-first-match ((t (:foreground ,wy-amber-bright))))
-   `(ido-only-match  ((t (:foreground ,wy-orange-vivid))))
-
-   ;;=========================================================================
-   ;; COMPLETION (VERTICO / CORFU / ORDERLESS)
-   ;;=========================================================================
-   `(vertico-current              ((t (:background ,wy-green-pepper :foreground ,wy-fg))))
-   `(orderless-match-face-0       ((t (:foreground ,wy-amber-bright :weight bold))))
-   `(orderless-match-face-1       ((t (:foreground ,wy-blue         :weight bold))))
-   `(orderless-match-face-2       ((t (:foreground ,wy-green        :weight bold))))
-   `(orderless-match-face-3       ((t (:foreground ,wy-red-dusty    :weight bold))))
-   `(completions-first-difference ((t (:foreground ,wy-amber         :weight bold))))
-   `(completions-common-part      ((t (:foreground ,wy-fg))))
-
-   `(corfu-current ((t (:background ,wy-green-dark :foreground ,wy-amber))))
-   `(corfu-default ((t (:background ,wy-bg-alt))))
-   `(corfu-bar     ((t (:background ,wy-blue))))
-   `(corfu-border  ((t (:background ,wy-gray-dark))))
-
-   ;;=========================================================================
-   ;; PARENTHESES
-   ;;=========================================================================
-   `(show-paren-match    ((t (:background ,wy-gray-dark))))
-   `(show-paren-mismatch ((t (:background ,wy-lavender))))
-
-   ;;=========================================================================
-   ;; RAINBOW DELIMITERS
-   ;;=========================================================================
-   `(rainbow-delimiters-depth-1-face ((t (:foreground ,wy-amber))))
-   `(rainbow-delimiters-depth-2-face ((t (:foreground ,wy-green))))
-   `(rainbow-delimiters-depth-3-face ((t (:foreground ,wy-red))))
-   `(rainbow-delimiters-depth-4-face ((t (:foreground ,wy-red-dusty))))
-   `(rainbow-delimiters-depth-5-face ((t (:foreground ,wy-gold))))
-   `(rainbow-delimiters-depth-6-face ((t (:foreground ,wy-amber-bright))))
-   `(rainbow-delimiters-depth-7-face ((t (:foreground ,wy-orange))))
-   `(rainbow-delimiters-depth-8-face ((t (:foreground ,wy-orange-vivid))))
-   `(rainbow-delimiters-depth-9-face ((t (:foreground ,wy-cyan))))
-
-   ;;=========================================================================
-   ;; LSP & DIAGNOSTICS
-   ;;=========================================================================
-   `(eglot-highlight-symbol-face   ((t (:background ,wy-bg-alt))))
-   `(eglot-diagnostic-error-face   ((t (:underline (:color ,wy-red    :style wave)))))
-   `(eglot-diagnostic-warning-face ((t (:underline (:color ,wy-amber  :style wave)))))
-   `(eglot-diagnostic-note-face    ((t (:underline (:color ,wy-blue   :style wave)))))
-   `(eglot-diagnostic-hint-face    ((t (:underline (:color ,wy-green  :style wave)))))
-
-   `(flycheck-error   ((t (:underline (:color ,wy-red   :style wave)))))
-   `(flycheck-warning ((t (:underline (:color ,wy-amber :style wave)))))
-   `(flycheck-info    ((t (:underline (:color ,wy-blue  :style wave)))))
-
-   ;;=========================================================================
-   ;; COMPILATION
-   ;;=========================================================================
-   `(compilation-error          ((t (:foreground ,wy-red))))
-   `(compilation-info           ((t (:foreground ,wy-green))))
-   `(compilation-warning        ((t (:foreground ,wy-brown  :weight bold))))
-   `(compilation-mode-line-fail ((t (:foreground ,wy-red    :weight bold))))
-   `(compilation-mode-line-exit ((t (:foreground ,wy-green  :weight bold))))
-
-   ;;=========================================================================
-   ;; ORG MODE
-   ;;=========================================================================
-   `(org-level-1 ((t (:foreground ,wy-amber         :weight bold :height 1.3))))
-   `(org-level-2 ((t (:foreground ,wy-brown         :weight bold :height 1.2))))
-   `(org-level-3 ((t (:foreground ,wy-red           :weight bold :height 1.1))))
-   `(org-level-4 ((t (:foreground ,wy-blue          :weight bold))))
-   `(org-level-5 ((t (:foreground ,wy-red-dusty     :weight bold))))
-   `(org-level-6 ((t (:foreground ,wy-lavender      :weight bold))))
-   `(org-level-7 ((t (:foreground ,wy-cyan          :weight bold))))
-   `(org-level-8 ((t (:foreground ,wy-orange        :weight bold))))
-
-   `(org-document-title        ((t (:foreground ,wy-amber  :weight bold :height 1.5))))
-   `(org-document-info         ((t (:foreground ,wy-cyan))))
-   `(org-document-info-keyword ((t (:foreground ,wy-gray))))
-
-   `(org-list-dt                  ((t (:foreground ,wy-amber  :weight bold))))
-   `(org-checkbox                 ((t (:foreground ,wy-amber  :weight bold))))
-   `(org-checkbox-statistics-todo ((t (:foreground ,wy-red-dusty))))
-   `(org-checkbox-statistics-done ((t (:foreground ,wy-green))))
-
-   `(org-todo          ((t (:foreground ,wy-red       :weight bold))))
-   `(org-done          ((t (:foreground ,wy-green     :weight bold))))
-   `(org-headline-todo ((t (:foreground ,wy-red-dusty))))
-   `(org-headline-done ((t (:foreground ,wy-gray      :strike-through t))))
-
-   `(org-special-keyword ((t (:foreground ,wy-gray))))
-   `(org-property-value  ((t (:foreground ,wy-cyan))))
-   `(org-drawer          ((t (:foreground ,wy-gray))))
-   `(org-meta-line       ((t (:foreground ,wy-gray))))
-
-   `(org-link ((t (:foreground ,wy-blue :underline t))))
-   `(org-tag  ((t (:foreground ,wy-amber :weight bold))))
-
-   `(org-block            ((t (:background ,wy-bg-alt :foreground ,wy-fg :extend t))))
-   `(org-block-begin-line ((t (:foreground ,wy-gray   :background ,wy-bg :extend t))))
-   `(org-block-end-line   ((t (:foreground ,wy-gray   :background ,wy-bg :extend t))))
-   `(org-code             ((t (:foreground ,wy-orange  :background ,wy-bg-alt))))
-   `(org-verbatim         ((t (:foreground ,wy-green   :background ,wy-bg-alt))))
-
-   `(org-table ((t (:foreground ,wy-cyan))))
-
-   `(org-date                 ((t (:foreground ,wy-lavender :underline t))))
-   `(org-time-grid            ((t (:foreground ,wy-amber))))
-   `(org-upcoming-deadline    ((t (:foreground ,wy-red))))
-   `(org-scheduled            ((t (:foreground ,wy-green))))
-   `(org-scheduled-today      ((t (:foreground ,wy-amber    :weight bold))))
-   `(org-scheduled-previously ((t (:foreground ,wy-red-dusty))))
-
-   `(org-priority ((t (:foreground ,wy-orange-vivid :weight bold))))
-
-   `(org-agenda-structure  ((t (:foreground ,wy-blue   :weight bold))))
-   `(org-agenda-date       ((t (:foreground ,wy-cyan))))
-   `(org-agenda-date-today ((t (:foreground ,wy-amber  :weight bold :height 1.2))))
-   `(org-agenda-done       ((t (:foreground ,wy-gray))))
-
-   `(org-footnote ((t (:foreground ,wy-lavender :underline t))))
-
-   `(org-bold   ((t (:foreground ,wy-fg :weight bold))))
-   `(org-italic ((t (:foreground ,wy-fg :slant italic))))
-
-   ;;=========================================================================
-   ;; ORG-MODERN
-   ;;=========================================================================
-   `(org-modern-tag        ((t (:background ,wy-green-pepper :foreground ,wy-amber))))
-   `(org-modern-priority   ((t (:background ,wy-bg-alt       :foreground ,wy-orange-vivid))))
-   `(org-modern-todo       ((t (:background ,wy-bg-alt       :foreground ,wy-red    :weight bold))))
-   `(org-modern-done       ((t (:background ,wy-bg-alt       :foreground ,wy-brown  :weight bold))))
-   `(org-modern-date       ((t (:background ,wy-bg-alt       :foreground ,wy-lavender))))
-   `(org-modern-time       ((t (:background ,wy-bg-alt       :foreground ,wy-amber))))
-   `(org-modern-statistics ((t (:background ,wy-bg-alt       :foreground ,wy-cyan))))
-
-   ;;=========================================================================
-   ;; TOOLTIP
-   ;;=========================================================================
-   `(tooltip ((t (:background ,wy-brown :foreground ,wy-bg))))))
-
-;;=========================================================================
 ;; THEME REGISTRATION
 ;;=========================================================================
 
@@ -545,35 +287,9 @@
                (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'menudo)
-(provide-theme 'weyland-yutani)
 
 (when (or (display-graphic-p) (daemonp))
   (enable-theme 'menudo))
-
-;;=========================================================================
-;; THEME SWITCHER
-;;=========================================================================
-
-(defvar my/available-themes '(menudo weyland-yutani)
-  "Custom themes provided by this file.")
-
-(defun my/select-theme (theme)
-  "Switch to THEME, disabling any currently enabled themes first."
-  (interactive
-   (list (intern (completing-read "Theme: " my/available-themes nil t))))
-  (mapc #'disable-theme (copy-sequence custom-enabled-themes))
-  (enable-theme theme)
-  (message "Enabled theme: %s" theme))
-
-(defun my/select-theme-weyland-yutani ()
-  "Switch to the Weyland-Yutani theme."
-  (interactive)
-  (my/select-theme 'weyland-yutani))
-
-(defun my/select-theme-menudo ()
-  "Switch to the Menudo theme."
-  (interactive)
-  (my/select-theme 'menudo))
 
 ;;=========================================================================
 ;; HL-LINE & CURSOR SETUP
@@ -588,11 +304,11 @@
 ;;=========================================================================
 
 (defun menudo--enable-for-frame (&optional frame)
-  "Re-apply the active custom theme(s) on FRAME if it is graphical."
+  "Enable Menudo theme for FRAME if it is a graphical frame."
   (with-selected-frame (or frame (selected-frame))
-    (when (display-graphic-p)
-      (dolist (theme (copy-sequence custom-enabled-themes))
-        (enable-theme theme)))))
+    (when (and (display-graphic-p)
+               (not (memq 'menudo custom-enabled-themes)))
+      (enable-theme 'menudo))))
 
 (add-hook 'after-make-frame-functions #'menudo--enable-for-frame)
 
