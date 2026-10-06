@@ -101,16 +101,12 @@ pip install debugpy
         ("gnu"          . "https://raw.githubusercontent.com/d12frosted/elpa-mirror/master/gnu/")
         ("nongnu"       . "https://raw.githubusercontent.com/d12frosted/elpa-mirror/master/nongnu/")))
 
-(package-initialize)
+(condition-case err
+    (package-refresh-contents)
+  (error (message "package-refresh-contents failed: %s"
+                  (error-message-string err))))
 
-;; Do NOT refresh the package index at startup: `package-refresh-contents'
-;; blocks for a long time when the mirror is slow or unreachable, so startup
-;; looks like it hangs on "connecting to elpa". Refresh on demand instead,
-;; e.g. before installing something new, with `M-x my/refresh-packages'.
-(defun my/refresh-packages ()
-  "Refresh the package archives on demand."
-  (interactive)
-  (package-refresh-contents))
+(package-initialize)
 
 ;; Bootstrap use-package
 (unless (package-installed-p 'use-package)
