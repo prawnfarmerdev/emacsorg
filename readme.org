@@ -146,7 +146,7 @@ pip install debugpy
                       :font (if windows-p
                                 "Inconsolata Nerd Font"
                               "InconsolataGo Nerd Font Mono")
-                      :weight (if windows-p 'regular 'semilight)
+                      :weight 'semilight
                       :height (if (or windows-p wsl-p) 200 140)))
 
 (set-frame-parameter nil 'alpha-background 95)
