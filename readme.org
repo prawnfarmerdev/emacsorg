@@ -1516,13 +1516,23 @@ Opens selected directory in dired and registers it with project.el."
     (concat "https://github.com/" (match-string 1 remote-url)))
    (t (error "Not a GitHub repository: %s" remote-url))))
 
+(defun my/open-url-in-windows-chrome (url)
+  "Open URL in Windows Chrome from WSL using cmd.exe start.
+If called interactively, prompt for the URL."
+  (interactive "sURL to open in Windows Chrome: ")
+  (start-process "windows-chrome" nil "cmd.exe" "/C" "start" "chrome" url))
+
 (defun my/open-github-pr ()
-  "Open the GitHub compare page for the current branch."
+  "Open the GitHub compare page for the current branch.
+Opens in Windows Chrome under WSL, otherwise in the default browser."
   (interactive)
   (if-let* ((git-info   (my/get-git-info)))
       (and-let* ((github-url (my/convert-to-github-url (car git-info)))
                  (branch     (cdr git-info)))
-        (browse-url (concat github-url "/compare/" branch)))
+        (let ((url (concat github-url "/compare/" branch)))
+          (if (and (fboundp 'my/wsl-p) (my/wsl-p))
+              (my/open-url-in-windows-chrome url)
+            (browse-url url))))
     (user-error "Not in a git repository")))
 #+end_src
 
