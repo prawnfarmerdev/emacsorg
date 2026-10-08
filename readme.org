@@ -1114,8 +1114,30 @@ parser as `next-error' / `M-g n'."
    '((?+ . "◦")
      (?- . "–")
      (?* . "•")))
-  :config
-  (global-org-modern-mode))
+   :config
+   (global-org-modern-mode))
+#+end_src
+
+* Ebooks (nov)
+#+begin_src emacs-lisp
+;; nov.el - EPUB reader that renders books directly in Emacs.
+(use-package nov
+  :ensure t
+  :mode ("\\.epub\\'" . nov-mode)
+  :custom
+  (nov-text-width 80))
+
+;; Render EPUBs through the embedded WebKit widget (custom CSS/JS, images).
+;; Requires Emacs built with xwidget support (enabled in nix-station via
+;; `emacs.override { withXwidgets = true; withPgtk = true; }'); on hosts
+;; without it (e.g. WSL) this block is skipped.
+(use-package nov-xwidget
+  :after nov
+  :if (featurep 'xwidget-internal)
+  :vc (:url "https://github.com/chenyanming/nov-xwidget"
+       :rev :newest)
+  :bind (:map nov-mode-map
+         ("C-c C-v" . nov-xwidget-view)))
 #+end_src
 
 * Terminal
