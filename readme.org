@@ -867,8 +867,9 @@ Uses region if active, otherwise word at point (adds .h if no extension)."
   :ensure t
   :config
   (setq yas-snippet-dirs
-        '("~/.emacs.d/snippets"                 ;; check here for your custom snippets
-          ))
+        (list (expand-file-name "snippets" user-emacs-directory)
+              ;; check here for your custom snippets
+              ))
   (yas-global-mode 1))                          ;; Loads yasnippet in all modes
 
 (use-package yasnippet-snippets
