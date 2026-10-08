@@ -1,6 +1,34 @@
 #+TITLE: PrawnFarmerDev Emacs Configuration
 #+PROPERTY: header-args:emacs-lisp :tangle ~/.emacs.d/init.el
 
+* Overview
+This repository is a literate Emacs configuration: =readme.org= is the single
+source of truth. All =emacs-lisp= blocks tangle to =~/.emacs.d/init.el=, the
+early-init block tangles to =~/.emacs.d/early-init.el=, and
+=config/theme.el= (the Menudo theme) ships alongside them.
+
+** Deployment on NixOS
+On this machine the configuration is provisioned by
+[[https://github.com/prawnfarmerdev/nix-station][nix-station]], which pins this
+repository as the =emacsorg= flake input, tangles =readme.org= at build time
+into the Nix store and symlinks the result into =~/.emacs.d/= (so =init.el= is
+read-only and owned by home-manager). Emacs packages are installed on first
+launch by =package.el= from the d12frosted ELPA mirror.
+
+To apply an edit made here:
+#+begin_example
+cd /etc/nixos
+sudo nix flake update nix-station
+sudo nixos-rebuild switch --flake /etc/nixos#nix-station
+#+end_example
+
+*NOTE:* do not run =org-babel-tangle= on this file on the NixOS machine - that
+would replace home-manager's =~/.emacs.d/init.el= symlink with a regular file.
+
+** Manual use (non-NixOS)
+Open =readme.org= in Emacs and run =M-x org-babel-tangle=; the external tools
+listed below are still required.
+
 * Early Init (Performance & Warning Suppression)
 This section creates an early-init.el file for startup optimizations and warning suppression.
 #+begin_src emacs-lisp :tangle ~/.emacs.d/early-init.el
@@ -32,60 +60,21 @@ This section creates an early-init.el file for startup optimizations and warning
 ;;; early-init.el ends here
 #+end_src
 
-* System Requirements
-Before using this configuration, install the following packages on your Arch system:
-** Core tools
-#+begin_src bash :tangle no
-# Package manager and Git
-sudo pacman -S git ripgrep
+* External Tools
+This configuration shells out to external programs for searching, LSP,
+debugging and formatting. Install them with your package manager; on NixOS add
+the equivalents to =home.packages=.
 
-# Language servers
-sudo pacman -S python-lsp-server gopls clang typescript-language-server
+| Purpose           | Programs                                                                                    |
+|-------------------+---------------------------------------------------------------------------------------------|
+| Search / VCS      | =rg= (ripgrep), =git=                                                                        |
+| Language servers  | =pylsp=, =gopls=, =clangd=, =typescript-language-server=, =terraform-ls=, =yaml-language-server=, =vscode-json-language-server=, =dockerfile-language-server= |
+| Debuggers (dape)  | =gdb=, =lldb= (=dlv= for Go, =debugpy= for Python)                                          |
+| Formatters        | =clang-format=, =black=, =prettier=, =gofmt=                                                 |
+| Eldoc backend     | =godef= (for =go-eldoc=)                                                                     |
+| GitHub CLI        | =gh= (optional, for =my/create-new-project=)                                                 |
 
-# Debuggers (for dape)
-sudo pacman -S gdb lldb delve  # C/C++, Go debuggers
-
-# Eldoc backends (no LSP needed)
-go install github.com/rogpeppe/godef@latest  # go-eldoc
-
-# Formatters for apheleia (format on save)
-sudo pacman -S clang                  # clang-format for C/C++
-pip install black                     # Python
-npm install -g prettier               # JS/TS/JSON/YAML
-# gofmt ships with Go - no extra install needed
-#+end_src
-
-** AUR packages (using yay or paru)
-#+begin_src bash :tangle no
-# JSON language server
-yay -S vscode-json-languageserver
-
-# YAML language server
-yay -S yaml-language-server-bin
-
-# Terraform language server
-yay -S terraform-ls
-
-# Dockerfile language server
-yay -S dockerfile-language-server-bin
-
-# GitHub CLI (optional, for project creation)
-yay -S github-cli
-#+end_src
-
-** Alternative installation via npm
-#+begin_src bash :tangle no
-# If you prefer npm installation:
-npm install -g vscode-langservers-extracted  # includes json-languageserver
-npm install -g yaml-language-server
-npm install -g @ansible/ansible-language-server  # if you use Ansible
-#+end_src
-
-** Python debugger
-#+begin_src bash :tangle no
-# For Python debugging with dape
-pip install debugpy
-#+end_src
+Tree-sitter grammars are supplied by Nix (see the Tree-sitter section).
 
 * Package Setup
 #+begin_src emacs-lisp

@@ -1,1 +1,11 @@
-emacsbak.org.txt
+# Byte-compiled Emacs Lisp
+*.elc
+
+# Emacs backup / autosave files
+*~
+\#*\#
+.\#*
+
+# Ad-hoc config backups
+*.org.txt
+*.bak
