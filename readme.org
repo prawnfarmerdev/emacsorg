@@ -1119,24 +1119,6 @@ parser as `next-error' / `M-g n'."
    (global-org-modern-mode))
 #+end_src
 
-* Ebooks & PDFs
-#+begin_src emacs-lisp
-;; nov.el - EPUB reader that renders books directly in Emacs.
-(use-package nov
-  :ensure t
-  :mode ("\\.epub\\'" . nov-mode)
-  :custom
-  (nov-text-width 80))
-
-;; pdf-tools - full-featured PDF viewing (search, selection, annotations).
-;; Provided by Nix: nix-station builds Emacs with the `pdf-tools' package,
-;; which includes the compiled epdfinfo server (`:ensure nil' because a plain
-;; package.el/MELPA install can't build that server).
-(use-package pdf-tools
-  :ensure nil
-  :mode ("\\.pdf\\'" . pdf-view-mode))
-#+end_src
-
 * Terminal
 #+begin_src emacs-lisp
 ;; Ghostel - terminal emulator powered by libghostty. The native module is
